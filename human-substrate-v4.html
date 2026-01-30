@@ -43,6 +43,17 @@
         .link-capacity.cascade-boost { stroke-opacity: 0.9; stroke: #22c55e; }
         .link-capacity.drag-highlight { stroke-opacity: 0.9; stroke: #fbbf24; stroke-width: 2.5px; }
 
+        /* Ripple animation on links */
+        .link-capacity.ripple-active {
+            stroke-width: 3px;
+            animation: linkPulse 0.6s ease-out;
+        }
+
+        @keyframes linkPulse {
+            0% { stroke-opacity: 1; stroke-width: 4px; }
+            100% { stroke-opacity: 0.25; stroke-width: 1.5px; }
+        }
+
         /* Role lines & labels */
         .role-line {
             stroke: #fbbf24;
@@ -127,6 +138,32 @@
         }
 
         .node-capacity.faded-drag { opacity: 0.3; }
+
+        /* Ripple effect on nodes */
+        .node-capacity.ripple-hit .main-circle {
+            animation: nodeRipple 0.5s ease-out;
+        }
+
+        @keyframes nodeRipple {
+            0% { transform: scale(1); filter: drop-shadow(0 0 0px currentColor); }
+            50% { transform: scale(1.3); filter: drop-shadow(0 0 15px currentColor); }
+            100% { transform: scale(1); filter: drop-shadow(0 0 0px currentColor); }
+        }
+
+        /* Ripple circles */
+        .ripple-circle {
+            fill: none;
+            stroke-width: 2;
+            pointer-events: none;
+        }
+
+        .ripple-circle.degrade {
+            stroke: rgba(239, 68, 68, 0.8);
+        }
+
+        .ripple-circle.boost {
+            stroke: rgba(34, 197, 94, 0.8);
+        }
 
         /* Header */
         #header {
@@ -452,6 +489,114 @@
             color: white;
         }
 
+        /* Cascade Log Panel - NEW */
+        #cascade-log {
+            flex: 0 0 260px;
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 12px;
+            backdrop-filter: blur(8px);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            overflow-y: auto;
+            max-height: 100%;
+        }
+
+        #cascade-log.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #cascade-log.degrade-mode {
+            border-color: rgba(239, 68, 68, 0.5);
+        }
+
+        #cascade-log.boost-mode {
+            border-color: rgba(34, 197, 94, 0.5);
+        }
+
+        #cascade-log h3 {
+            font-size: 11px;
+            font-weight: 600;
+            color: #f1f5f9;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        #cascade-log h3 .log-icon {
+            font-size: 14px;
+        }
+
+        #cascade-log .log-entry {
+            display: flex;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+            font-size: 11px;
+            opacity: 0;
+            transform: translateX(-10px);
+            animation: logSlideIn 0.3s ease forwards;
+        }
+
+        @keyframes logSlideIn {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        #cascade-log .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        #cascade-log .log-source {
+            color: #fbbf24;
+            font-weight: 600;
+            min-width: 70px;
+        }
+
+        #cascade-log .log-arrow {
+            color: #64748b;
+            margin: 0 8px;
+            font-size: 12px;
+        }
+
+        #cascade-log .log-target {
+            color: #e2e8f0;
+            font-weight: 500;
+        }
+
+        #cascade-log .log-delta {
+            margin-left: auto;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 10px;
+        }
+
+        #cascade-log .log-delta.negative {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+
+        #cascade-log .log-delta.positive {
+            background: rgba(34, 197, 94, 0.2);
+            color: #86efac;
+        }
+
+        #cascade-log .log-depth {
+            font-size: 8px;
+            color: #64748b;
+            margin-left: 6px;
+            padding: 1px 4px;
+            background: rgba(51, 65, 85, 0.5);
+            border-radius: 3px;
+        }
+
         /* Outcome Panel */
         #outcome-panel {
             flex: 1;
@@ -516,7 +661,7 @@
             color: #86efac;
         }
 
-        /* Legend - moved to top left under header */
+        /* Legend */
         #legend {
             position: absolute;
             top: 70px;
@@ -568,11 +713,12 @@
 
             #panels-container {
                 flex-direction: column;
-                max-height: 40vh;
+                max-height: 45vh;
             }
 
             #drag-panel,
             #info-panel,
+            #cascade-log,
             #outcome-panel {
                 flex: none;
                 width: 100%;
@@ -606,7 +752,7 @@
             }
 
             #panels-container {
-                max-height: 35vh;
+                max-height: 40vh;
             }
 
             #legend {
@@ -679,11 +825,16 @@
                 <div id="roles-list" class="roles-list"></div>
             </div>
 
+            <div id="cascade-log">
+                <h3><span class="log-icon">⚡</span> Cascade Log</h3>
+                <div id="log-entries"></div>
+            </div>
+
             <div id="outcome-panel">
                 <h3><span class="status-dot"></span><span id="outcome-title"></span></h3>
                 <p id="outcome-text"></p>
                 <div class="cascade-list">
-                    <strong>Cascade:</strong>
+                    <strong>Summary:</strong>
                     <span id="cascade-items"></span>
                 </div>
             </div>
@@ -1027,6 +1178,7 @@
         const height = window.innerHeight;
 
         const svg = d3.select('#graph').attr('width', width).attr('height', height);
+        const rippleGroup = svg.append('g').attr('class', 'ripple-layer');
         const linkGroup = svg.append('g');
         const roleLineGroup = svg.append('g');
         const roleLabelGroup = svg.append('g');
@@ -1082,6 +1234,7 @@
             capacityNodes.forEach(n => n.health = 100);
             updateAllVisuals();
             hideAll();
+            clearCascadeLog();
         });
 
         nodeElements.on('click', (event, d) => {
@@ -1091,15 +1244,22 @@
             } else {
                 const delta = currentMode === 'degrade' ? -25 : 25;
                 d.health = Math.max(0, Math.min(100, d.health + delta));
-                const cascade = calculateCascade(d, delta);
+                const cascade = calculateCascadeWithDepth(d, delta);
+
+                // Apply cascade effects
                 cascade.forEach(e => {
                     const n = capacityNodes.find(x => x.id === e.id);
                     if (n) n.health = Math.max(0, Math.min(100, n.health + e.delta));
                 });
+
                 updateAllVisuals();
                 showOutcome(d, cascade, currentMode);
                 highlightCascade(d, cascade, currentMode);
                 selectNode(d);
+
+                // Animate the ripple and populate log
+                animateRipple(d, cascade, currentMode);
+                showCascadeLog(d, cascade, currentMode);
             }
         });
 
@@ -1200,7 +1360,7 @@
                 item.innerHTML = `<span class="dep-name">${c.node.label}</span><span class="dep-type ${c.type}">${linkTypeLabels[c.type] || c.type}</span>`;
                 depList.appendChild(item);
             });
-            const cascade = calculateCascade(d, -25);
+            const cascade = calculateCascadeWithDepth(d, -25);
             const effects = document.getElementById('cascade-effects');
             effects.innerHTML = '';
             cascade.slice(0, 6).forEach(e => {
@@ -1232,28 +1392,174 @@
             return conns;
         }
 
-        function calculateCascade(src, delta) {
+        // Enhanced cascade calculation that tracks depth and path
+        function calculateCascadeWithDepth(src, delta) {
             const effects = [], visited = new Set([src.id]);
-            function prop(nid, d, depth) {
+
+            function prop(nid, d, depth, fromNode) {
                 if (depth > 3) return;
                 capacityLinks.forEach(l => {
                     let tid = null, w = Math.abs(l.weight);
                     if ((l.source.id || l.source) === nid) tid = l.target.id || l.target;
                     else if ((l.target.id || l.target) === nid) tid = l.source.id || l.source;
                     if (!tid || visited.has(tid)) return;
+
                     let ed = l.type === 'tensions' ? -d * w * 0.4 :
                              (l.type === 'enables' || l.type === 'requires') ? d * w * 0.6 :
                              (l.type === 'reinforces' || l.type === 'supports') ? d * w * 0.5 : d * w * 0.3;
                     ed *= (1 - depth * 0.25);
+
                     if (Math.abs(ed) >= 3) {
                         visited.add(tid);
-                        effects.push({ id: tid, delta: Math.round(ed) });
-                        prop(tid, ed, depth + 1);
+                        effects.push({
+                            id: tid,
+                            delta: Math.round(ed),
+                            depth: depth + 1,
+                            from: nid,
+                            linkType: l.type
+                        });
+                        prop(tid, ed, depth + 1, nid);
                     }
                 });
             }
-            prop(src.id, delta, 0);
+            prop(src.id, delta, 0, null);
             return effects;
+        }
+
+        // Show cascade log panel with animated entries
+        function showCascadeLog(sourceNode, cascade, mode) {
+            const logPanel = document.getElementById('cascade-log');
+            const logEntries = document.getElementById('log-entries');
+
+            logPanel.classList.remove('degrade-mode', 'boost-mode');
+            logPanel.classList.add(mode === 'degrade' ? 'degrade-mode' : 'boost-mode');
+
+            logEntries.innerHTML = '';
+
+            // First entry: the source action
+            const sourceEntry = document.createElement('div');
+            sourceEntry.className = 'log-entry';
+            sourceEntry.style.animationDelay = '0ms';
+            sourceEntry.innerHTML = `
+                <span class="log-source">${sourceNode.label}</span>
+                <span class="log-arrow">⟶</span>
+                <span class="log-target" style="color: ${mode === 'degrade' ? '#fca5a5' : '#86efac'}">
+                    ${mode === 'degrade' ? 'DEGRADED' : 'BOOSTED'}
+                </span>
+                <span class="log-delta ${mode === 'degrade' ? 'negative' : 'positive'}">
+                    ${mode === 'degrade' ? '-25%' : '+25%'}
+                </span>
+            `;
+            logEntries.appendChild(sourceEntry);
+
+            // Sort cascade by depth for proper ordering
+            const sorted = [...cascade].sort((a, b) => a.depth - b.depth);
+
+            // Add cascade entries with staggered animation
+            sorted.forEach((effect, i) => {
+                const fromNode = capacityNodes.find(n => n.id === effect.from);
+                const toNode = capacityNodes.find(n => n.id === effect.id);
+
+                const entry = document.createElement('div');
+                entry.className = 'log-entry';
+                entry.style.animationDelay = `${(i + 1) * 150}ms`;
+
+                entry.innerHTML = `
+                    <span class="log-source">${fromNode?.label || '?'}</span>
+                    <span class="log-arrow">→</span>
+                    <span class="log-target">${toNode?.label || effect.id}</span>
+                    <span class="log-delta ${effect.delta > 0 ? 'positive' : 'negative'}">
+                        ${effect.delta > 0 ? '+' : ''}${effect.delta}%
+                    </span>
+                    <span class="log-depth">L${effect.depth}</span>
+                `;
+                logEntries.appendChild(entry);
+            });
+
+            if (cascade.length === 0) {
+                const noEffect = document.createElement('div');
+                noEffect.className = 'log-entry';
+                noEffect.style.animationDelay = '150ms';
+                noEffect.innerHTML = '<span style="color:#64748b;font-style:italic;">No cascade effects</span>';
+                logEntries.appendChild(noEffect);
+            }
+
+            logPanel.classList.add('visible');
+        }
+
+        function clearCascadeLog() {
+            document.getElementById('cascade-log').classList.remove('visible');
+            document.getElementById('log-entries').innerHTML = '';
+        }
+
+        // Animated ripple effect
+        function animateRipple(sourceNode, cascade, mode) {
+            const color = mode === 'degrade' ? 'rgba(239, 68, 68, 0.8)' : 'rgba(34, 197, 94, 0.8)';
+
+            // Create expanding ring from source
+            const ring = rippleGroup.append('circle')
+                .attr('class', `ripple-circle ${mode}`)
+                .attr('cx', sourceNode.x)
+                .attr('cy', sourceNode.y)
+                .attr('r', 20)
+                .style('stroke', color)
+                .style('opacity', 1);
+
+            ring.transition()
+                .duration(600)
+                .attr('r', 80)
+                .style('opacity', 0)
+                .remove();
+
+            // Animate affected nodes with delay based on depth
+            const sorted = [...cascade].sort((a, b) => a.depth - b.depth);
+
+            sorted.forEach((effect, i) => {
+                const targetNode = capacityNodes.find(n => n.id === effect.id);
+                if (!targetNode) return;
+
+                const delay = effect.depth * 200;
+
+                // Ripple ring at target
+                setTimeout(() => {
+                    const targetRing = rippleGroup.append('circle')
+                        .attr('class', `ripple-circle ${mode}`)
+                        .attr('cx', targetNode.x)
+                        .attr('cy', targetNode.y)
+                        .attr('r', 10)
+                        .style('stroke', color)
+                        .style('opacity', 0.8);
+
+                    targetRing.transition()
+                        .duration(400)
+                        .attr('r', 40)
+                        .style('opacity', 0)
+                        .remove();
+
+                    // Add ripple-hit class to node
+                    nodeElements.filter(n => n.id === effect.id)
+                        .classed('ripple-hit', true);
+
+                    setTimeout(() => {
+                        nodeElements.filter(n => n.id === effect.id)
+                            .classed('ripple-hit', false);
+                    }, 500);
+
+                }, delay);
+
+                // Animate link
+                setTimeout(() => {
+                    linkElements.filter(l => {
+                        const s = l.source.id || l.source;
+                        const t = l.target.id || l.target;
+                        return (s === effect.from && t === effect.id) || (t === effect.from && s === effect.id);
+                    }).classed('ripple-active', true);
+
+                    setTimeout(() => {
+                        linkElements.classed('ripple-active', false);
+                    }, 600);
+                }, delay - 100);
+            });
         }
 
         function updateAllVisuals() {
