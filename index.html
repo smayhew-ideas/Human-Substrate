@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Human Substrate — Complete Model</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Human Substrate</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
     <style>
         * {
@@ -17,6 +17,7 @@
             background: #0a0a0f;
             color: #e8e8e8;
             overflow: hidden;
+            touch-action: none;
         }
 
         #container {
@@ -38,28 +39,11 @@
             transition: stroke 0.3s ease, stroke-opacity 0.3s ease;
         }
 
-        .link-capacity.cascade-active {
-            stroke-opacity: 0.8;
-            stroke: #fbbf24;
-        }
+        .link-capacity.cascade-danger { stroke-opacity: 0.9; stroke: #ef4444; }
+        .link-capacity.cascade-boost { stroke-opacity: 0.9; stroke: #22c55e; }
+        .link-capacity.drag-highlight { stroke-opacity: 0.9; stroke: #fbbf24; stroke-width: 2.5px; }
 
-        .link-capacity.cascade-danger {
-            stroke-opacity: 0.9;
-            stroke: #ef4444;
-        }
-
-        .link-capacity.cascade-boost {
-            stroke-opacity: 0.9;
-            stroke: #22c55e;
-        }
-
-        .link-capacity.drag-highlight {
-            stroke-opacity: 0.9;
-            stroke: #fbbf24;
-            stroke-width: 2.5px;
-        }
-
-        /* Role lines */
+        /* Role lines & labels */
         .role-line {
             stroke: #fbbf24;
             stroke-width: 1.5;
@@ -69,21 +53,14 @@
             transition: stroke-opacity 0.3s ease;
             pointer-events: none;
         }
+        .role-line.visible { stroke-opacity: 0.5; }
 
-        .role-line.visible {
-            stroke-opacity: 0.5;
-        }
-
-        /* Role labels */
         .role-label-bg {
             fill: rgba(10, 10, 15, 0.9);
             opacity: 0;
             transition: opacity 0.3s ease;
         }
-
-        .role-label-bg.visible {
-            opacity: 1;
-        }
+        .role-label-bg.visible { opacity: 1; }
 
         .role-label {
             font-size: 10px;
@@ -94,19 +71,12 @@
             pointer-events: none;
             text-anchor: middle;
         }
-
-        .role-label.visible {
-            opacity: 1;
-        }
-
-        .role-label.at-risk {
-            fill: #f87171;
-        }
+        .role-label.visible { opacity: 1; }
+        .role-label.at-risk { fill: #f87171; }
 
         /* Nodes */
         .node-capacity {
             cursor: pointer;
-            transition: opacity 0.3s ease;
         }
 
         .node-capacity circle.main-circle {
@@ -115,7 +85,7 @@
         }
 
         .node-capacity text.node-label {
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 500;
             fill: #e2e8f0;
             pointer-events: none;
@@ -129,165 +99,126 @@
         }
 
         .node-capacity .health-text {
-            font-size: 9px;
+            font-size: 8px;
             fill: #94a3b8;
             text-anchor: middle;
             font-weight: 600;
         }
 
-        /* Health states */
         .health-healthy .main-circle { stroke: rgba(34, 197, 94, 0.7); }
         .health-stressed .main-circle { stroke: rgba(251, 191, 36, 0.8); }
         .health-degraded .main-circle { stroke: rgba(249, 115, 22, 0.9); }
-        .health-critical .main-circle { stroke: rgba(239, 68, 68, 1); }
-
-        .health-critical .main-circle {
-            animation: pulse-critical 1.2s ease-in-out infinite;
-        }
+        .health-critical .main-circle { stroke: rgba(239, 68, 68, 1); animation: pulse-critical 1.2s ease-in-out infinite; }
 
         @keyframes pulse-critical {
             0%, 100% { filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.5)); }
             50% { filter: drop-shadow(0 0 14px rgba(239, 68, 68, 0.8)); }
         }
 
-        .node-capacity.selected .main-circle {
+        .node-capacity.selected .main-circle,
+        .node-capacity.dragging .main-circle {
             stroke: #fbbf24 !important;
             stroke-width: 4px;
             filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.5));
         }
 
-        .node-capacity.dragging .main-circle {
-            stroke: #fbbf24 !important;
-            stroke-width: 4px;
-            filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.6));
-        }
-
         .node-capacity.connected-drag .main-circle {
             stroke: rgba(251, 191, 36, 0.7) !important;
-            stroke-width: 3px;
         }
 
-        .node-capacity.faded-drag {
-            opacity: 0.3;
-        }
+        .node-capacity.faded-drag { opacity: 0.3; }
 
         /* Header */
         #header {
             position: absolute;
-            top: 16px;
-            left: 16px;
+            top: 12px;
+            left: 12px;
             z-index: 10;
         }
 
         #header h1 {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
             color: #f1f5f9;
-            margin-bottom: 2px;
         }
 
         #header p {
-            font-size: 11px;
+            font-size: 10px;
             color: #64748b;
         }
 
         /* Control Panel */
         #controls {
             position: absolute;
-            top: 16px;
-            right: 16px;
+            top: 12px;
+            right: 12px;
             background: rgba(30, 41, 59, 0.95);
             border: 1px solid #334155;
             border-radius: 10px;
-            padding: 14px;
-            width: 200px;
+            padding: 12px;
+            width: 180px;
             backdrop-filter: blur(8px);
+            z-index: 20;
         }
 
         #controls h3 {
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #64748b;
-            margin-bottom: 10px;
-        }
-
-        .mode-buttons {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 12px;
-        }
-
-        .mode-btn {
-            flex: 1;
-            padding: 8px 6px;
-            border: 1px solid #334155;
-            border-radius: 6px;
-            background: #1e293b;
-            color: #94a3b8;
-            font-size: 11px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .mode-btn:hover {
-            background: #334155;
-        }
-
-        .mode-btn.active {
-            color: white;
-        }
-
-        .mode-btn.degrade.active {
-            background: #dc2626;
-            border-color: #dc2626;
-        }
-
-        .mode-btn.boost.active {
-            background: #16a34a;
-            border-color: #16a34a;
-        }
-
-        .mode-btn.view.active {
-            background: #2563eb;
-            border-color: #2563eb;
-        }
-
-        #reset-btn {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #475569;
-            border-radius: 6px;
-            background: transparent;
-            color: #94a3b8;
-            font-size: 11px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        #reset-btn:hover {
-            background: #334155;
-            color: #e2e8f0;
-        }
-
-        /* System Health */
-        #system-health {
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid #334155;
-        }
-
-        #system-health .label {
             font-size: 9px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: #64748b;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
+        }
+
+        .mode-buttons {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 10px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 8px 4px;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            background: #1e293b;
+            color: #94a3b8;
+            font-size: 10px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .mode-btn.active { color: white; }
+        .mode-btn.degrade.active { background: #dc2626; border-color: #dc2626; }
+        .mode-btn.boost.active { background: #16a34a; border-color: #16a34a; }
+        .mode-btn.view.active { background: #2563eb; border-color: #2563eb; }
+
+        #reset-btn {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            background: transparent;
+            color: #94a3b8;
+            font-size: 10px;
+            cursor: pointer;
+        }
+
+        #system-health {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #334155;
+        }
+
+        #system-health .label {
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            margin-bottom: 4px;
         }
 
         #health-bar {
-            height: 6px;
+            height: 5px;
             background: #1e293b;
             border-radius: 3px;
             overflow: hidden;
@@ -301,101 +232,99 @@
         }
 
         #health-value {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
             color: #22c55e;
-            margin-top: 6px;
-            transition: color 0.5s ease;
+            margin-top: 4px;
         }
 
-        /* Drag Stats Panel - NEW */
-        #drag-panel {
+        /* PANELS - Responsive Container */
+        #panels-container {
             position: absolute;
-            bottom: 16px;
-            left: 16px;
-            width: 340px;
+            bottom: 12px;
+            left: 12px;
+            right: 12px;
+            display: flex;
+            gap: 10px;
+            max-height: 35vh;
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        #panels-container > div {
+            pointer-events: auto;
+        }
+
+        /* Drag Panel */
+        #drag-panel {
+            flex: 0 0 280px;
             background: rgba(30, 41, 59, 0.97);
             border: 1px solid #fbbf24;
             border-radius: 10px;
-            padding: 16px;
+            padding: 12px;
             backdrop-filter: blur(10px);
             opacity: 0;
             transform: translateY(10px);
             transition: all 0.25s ease;
-            pointer-events: none;
-            box-shadow: 0 0 20px rgba(251, 191, 36, 0.15);
+            overflow-y: auto;
+            max-height: 100%;
         }
 
         #drag-panel.visible {
             opacity: 1;
             transform: translateY(0);
-            pointer-events: auto;
         }
 
         #drag-panel h3 {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             color: #fbbf24;
-            margin-bottom: 4px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        #drag-panel h3 .drag-icon {
-            font-size: 12px;
-            opacity: 0.7;
+            margin-bottom: 2px;
         }
 
         #drag-panel .subtitle {
-            font-size: 10px;
+            font-size: 9px;
             color: #64748b;
-            margin-bottom: 14px;
+            margin-bottom: 10px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         #drag-panel .section {
-            margin-bottom: 14px;
-        }
-
-        #drag-panel .section:last-child {
-            margin-bottom: 0;
+            margin-bottom: 10px;
         }
 
         #drag-panel .section-title {
-            font-size: 9px;
+            font-size: 8px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: #64748b;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         #drag-panel .dependency-list {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
+            max-height: 80px;
+            overflow-y: auto;
         }
 
         #drag-panel .dependency-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 6px 10px;
+            padding: 4px 8px;
             background: rgba(15, 23, 42, 0.6);
-            border-radius: 6px;
-            font-size: 11px;
+            border-radius: 4px;
+            font-size: 10px;
         }
 
-        #drag-panel .dep-name {
-            color: #e2e8f0;
-            font-weight: 500;
-        }
-
+        #drag-panel .dep-name { color: #e2e8f0; font-weight: 500; }
         #drag-panel .dep-type {
             color: #94a3b8;
-            font-size: 10px;
-            padding: 2px 6px;
+            font-size: 9px;
+            padding: 2px 5px;
             background: rgba(71, 85, 105, 0.5);
             border-radius: 3px;
         }
@@ -403,41 +332,30 @@
         #drag-panel .dep-type.reinforces { background: rgba(59, 130, 246, 0.3); color: #93c5fd; }
         #drag-panel .dep-type.enables { background: rgba(34, 197, 94, 0.3); color: #86efac; }
         #drag-panel .dep-type.tensions { background: rgba(239, 68, 68, 0.3); color: #fca5a5; }
-        #drag-panel .dep-type.supports { background: rgba(16, 185, 129, 0.3); color: #6ee7b7; }
-        #drag-panel .dep-type.requires { background: rgba(249, 115, 22, 0.3); color: #fdba74; }
 
         #drag-panel .cascade-preview {
-            padding: 10px 12px;
+            padding: 8px 10px;
             background: rgba(239, 68, 68, 0.1);
             border: 1px solid rgba(239, 68, 68, 0.3);
             border-radius: 6px;
         }
 
-        #drag-panel .cascade-preview.boost-preview {
-            background: rgba(34, 197, 94, 0.1);
-            border-color: rgba(34, 197, 94, 0.3);
-        }
-
         #drag-panel .cascade-title {
-            font-size: 10px;
+            font-size: 9px;
             color: #f87171;
             font-weight: 600;
-            margin-bottom: 6px;
-        }
-
-        #drag-panel .cascade-preview.boost-preview .cascade-title {
-            color: #4ade80;
+            margin-bottom: 4px;
         }
 
         #drag-panel .cascade-effects {
             display: flex;
             flex-wrap: wrap;
-            gap: 4px;
+            gap: 3px;
         }
 
         #drag-panel .cascade-effect {
-            font-size: 10px;
-            padding: 3px 7px;
+            font-size: 9px;
+            padding: 2px 5px;
             background: rgba(239, 68, 68, 0.2);
             border-radius: 3px;
             color: #fca5a5;
@@ -452,94 +370,77 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-top: 10px;
-            padding-top: 10px;
+            margin-top: 8px;
+            padding-top: 8px;
             border-top: 1px solid #334155;
         }
 
-        #drag-panel .impact-label {
-            font-size: 10px;
-            color: #94a3b8;
-        }
+        #drag-panel .impact-label { font-size: 9px; color: #94a3b8; }
+        #drag-panel .impact-value { font-size: 14px; font-weight: 600; color: #f87171; }
+        #drag-panel .impact-value.positive { color: #4ade80; }
 
-        #drag-panel .impact-value {
-            font-size: 14px;
-            font-weight: 600;
-            color: #f87171;
-        }
-
-        #drag-panel .impact-value.positive {
-            color: #4ade80;
-        }
-
-        /* Info Panel - Right side */
+        /* Info Panel */
         #info-panel {
-            position: absolute;
-            top: 220px;
-            right: 16px;
-            width: 200px;
+            flex: 0 0 200px;
             background: rgba(30, 41, 59, 0.95);
             border: 1px solid #334155;
             border-radius: 10px;
-            padding: 14px;
+            padding: 12px;
             backdrop-filter: blur(8px);
             opacity: 0;
-            transform: translateX(10px);
+            transform: translateY(10px);
             transition: all 0.3s ease;
-            pointer-events: none;
-            max-height: calc(100vh - 240px);
             overflow-y: auto;
+            max-height: 100%;
         }
 
         #info-panel.visible {
             opacity: 1;
-            transform: translateX(0);
-            pointer-events: auto;
+            transform: translateY(0);
         }
 
         #info-panel h2 {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             color: #f1f5f9;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
 
         #info-panel .cluster-badge {
             display: inline-block;
-            font-size: 9px;
+            font-size: 8px;
             font-weight: 500;
-            padding: 2px 8px;
-            border-radius: 8px;
-            margin-bottom: 10px;
+            padding: 2px 6px;
+            border-radius: 6px;
+            margin-bottom: 8px;
             color: white;
         }
 
         #info-panel .tooltip {
-            font-size: 12px;
+            font-size: 11px;
             color: #94a3b8;
             line-height: 1.4;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             font-style: italic;
         }
 
         #info-panel .section-title {
-            font-size: 9px;
+            font-size: 8px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: #64748b;
             margin-bottom: 6px;
-            margin-top: 10px;
         }
 
         #info-panel .roles-list {
             display: flex;
             flex-wrap: wrap;
-            gap: 4px;
+            gap: 3px;
         }
 
         #info-panel .role-tag {
-            font-size: 10px;
-            padding: 3px 7px;
+            font-size: 9px;
+            padding: 2px 6px;
             background: #fbbf24;
             border-radius: 3px;
             color: #0a0a0f;
@@ -551,37 +452,35 @@
             color: white;
         }
 
-        /* Outcome Panel - Bottom */
+        /* Outcome Panel */
         #outcome-panel {
-            position: absolute;
-            bottom: 16px;
-            left: 370px;
-            right: 230px;
+            flex: 1;
+            min-width: 0;
             background: rgba(30, 41, 59, 0.95);
             border: 1px solid #334155;
             border-radius: 10px;
-            padding: 14px 16px;
+            padding: 12px;
             backdrop-filter: blur(8px);
             opacity: 0;
             transform: translateY(10px);
             transition: all 0.3s ease;
-            pointer-events: none;
+            overflow-y: auto;
+            max-height: 100%;
         }
 
         #outcome-panel.visible {
             opacity: 1;
             transform: translateY(0);
-            pointer-events: auto;
         }
 
         #outcome-panel h3 {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             color: #f1f5f9;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
 
         #outcome-panel .status-dot {
@@ -591,25 +490,25 @@
         }
 
         #outcome-panel p {
-            font-size: 12px;
+            font-size: 11px;
             color: #cbd5e1;
-            line-height: 1.5;
-            margin-bottom: 10px;
+            line-height: 1.4;
+            margin-bottom: 8px;
         }
 
         #outcome-panel .cascade-list {
-            font-size: 11px;
+            font-size: 10px;
             color: #94a3b8;
         }
 
         #outcome-panel .cascade-item {
             display: inline-block;
-            padding: 2px 6px;
+            padding: 2px 5px;
             background: rgba(239, 68, 68, 0.2);
             border-radius: 3px;
-            margin: 2px 3px 2px 0;
+            margin: 2px 2px 2px 0;
             color: #fca5a5;
-            font-size: 10px;
+            font-size: 9px;
         }
 
         #outcome-panel .cascade-item.boost {
@@ -617,39 +516,39 @@
             color: #86efac;
         }
 
-        /* Legend */
+        /* Legend - moved to top left under header */
         #legend {
             position: absolute;
-            bottom: 16px;
-            right: 16px;
-            background: rgba(30, 41, 59, 0.9);
+            top: 70px;
+            left: 12px;
+            background: rgba(30, 41, 59, 0.85);
             border: 1px solid #334155;
-            padding: 10px 14px;
+            padding: 8px 12px;
             border-radius: 8px;
             backdrop-filter: blur(8px);
-            width: 200px;
+            z-index: 10;
         }
 
         #legend h3 {
-            font-size: 9px;
+            font-size: 8px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: #64748b;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 6px;
-            font-size: 10px;
+            gap: 5px;
+            font-size: 9px;
             color: #94a3b8;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
 
         .legend-dot {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             border: 2px solid;
             background: transparent;
@@ -660,40 +559,63 @@
         .legend-dot.degraded { border-color: #f97316; }
         .legend-dot.critical { border-color: #ef4444; }
 
-        #legend .divider {
-            height: 1px;
-            background: #334155;
-            margin: 8px 0;
+        /* iPad & Tablet Adjustments */
+        @media (max-width: 1024px) {
+            #controls {
+                width: 160px;
+                padding: 10px;
+            }
+
+            #panels-container {
+                flex-direction: column;
+                max-height: 40vh;
+            }
+
+            #drag-panel,
+            #info-panel,
+            #outcome-panel {
+                flex: none;
+                width: 100%;
+                max-height: none;
+            }
+
+            #drag-panel .dependency-list {
+                max-height: 60px;
+            }
+
+            #legend {
+                top: auto;
+                bottom: auto;
+                top: 60px;
+            }
         }
 
-        .legend-role {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 10px;
-            color: #94a3b8;
-            margin-bottom: 3px;
-        }
+        /* Phone */
+        @media (max-width: 600px) {
+            #header h1 { font-size: 14px; }
+            #header p { font-size: 9px; }
 
-        .legend-role-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
+            #controls {
+                width: 140px;
+                padding: 8px;
+            }
 
-        /* Instructions */
-        #instructions {
-            position: absolute;
-            top: 70px;
-            left: 16px;
-            font-size: 10px;
-            color: #64748b;
-            max-width: 180px;
-            line-height: 1.5;
-        }
+            .mode-btn {
+                padding: 6px 2px;
+                font-size: 9px;
+            }
 
-        #instructions strong {
-            color: #94a3b8;
+            #panels-container {
+                max-height: 35vh;
+            }
+
+            #legend {
+                display: none;
+            }
+
+            .node-capacity text.node-label {
+                font-size: 8px;
+            }
         }
     </style>
 </head>
@@ -706,12 +628,6 @@
             <p>Capacities, Carriers, Cascades</p>
         </div>
 
-        <div id="instructions">
-            <strong>Click</strong> to see who carries it<br>
-            <strong>Drag</strong> to explore dependencies<br>
-            <strong>Degrade/Boost</strong> to simulate change
-        </div>
-
         <div id="controls">
             <h3>Intervention</h3>
             <div class="mode-buttons">
@@ -720,66 +636,57 @@
                 <button class="mode-btn boost" data-mode="boost">Boost</button>
             </div>
             <button id="reset-btn">Reset System</button>
-
             <div id="system-health">
                 <div class="label">System Health</div>
-                <div id="health-bar">
-                    <div id="health-fill" style="width: 100%"></div>
-                </div>
+                <div id="health-bar"><div id="health-fill" style="width: 100%"></div></div>
                 <div id="health-value">100%</div>
             </div>
         </div>
 
-        <!-- NEW: Drag Stats Panel -->
-        <div id="drag-panel">
-            <h3><span class="drag-icon">⟷</span> <span id="drag-node-name">Node</span></h3>
-            <div class="subtitle">Dependencies & Predicted Impact</div>
+        <div id="legend">
+            <h3>Health</h3>
+            <div class="legend-item"><div class="legend-dot healthy"></div>Healthy</div>
+            <div class="legend-item"><div class="legend-dot stressed"></div>Stressed</div>
+            <div class="legend-item"><div class="legend-dot degraded"></div>Degraded</div>
+            <div class="legend-item"><div class="legend-dot critical"></div>Critical</div>
+        </div>
 
-            <div class="section">
-                <div class="section-title">Connected To</div>
-                <div id="dependency-list" class="dependency-list"></div>
-            </div>
-
-            <div class="section">
-                <div id="cascade-preview" class="cascade-preview">
-                    <div class="cascade-title">If Degraded:</div>
-                    <div id="cascade-effects" class="cascade-effects"></div>
+        <div id="panels-container">
+            <div id="drag-panel">
+                <h3><span id="drag-node-name">Node</span></h3>
+                <div class="subtitle">Dependencies & Impact</div>
+                <div class="section">
+                    <div class="section-title">Connected To</div>
+                    <div id="dependency-list" class="dependency-list"></div>
+                </div>
+                <div class="section">
+                    <div id="cascade-preview" class="cascade-preview">
+                        <div class="cascade-title">If Degraded:</div>
+                        <div id="cascade-effects" class="cascade-effects"></div>
+                    </div>
+                </div>
+                <div class="impact-stat">
+                    <span class="impact-label">System Impact</span>
+                    <span id="impact-value" class="impact-value">-0%</span>
                 </div>
             </div>
 
-            <div class="impact-stat">
-                <span class="impact-label">Potential System Impact</span>
-                <span id="impact-value" class="impact-value">-0%</span>
+            <div id="info-panel">
+                <h2 id="node-title"></h2>
+                <span id="cluster-badge" class="cluster-badge"></span>
+                <p id="node-tooltip" class="tooltip"></p>
+                <div class="section-title">Carried By</div>
+                <div id="roles-list" class="roles-list"></div>
             </div>
-        </div>
 
-        <div id="info-panel">
-            <h2 id="node-title"></h2>
-            <span id="cluster-badge" class="cluster-badge"></span>
-            <p id="node-tooltip" class="tooltip"></p>
-            <div class="section-title">Carried By</div>
-            <div id="roles-list" class="roles-list"></div>
-        </div>
-
-        <div id="outcome-panel">
-            <h3><span class="status-dot"></span><span id="outcome-title"></span></h3>
-            <p id="outcome-text"></p>
-            <div class="cascade-list">
-                <strong>Cascade:</strong>
-                <span id="cascade-items"></span>
+            <div id="outcome-panel">
+                <h3><span class="status-dot"></span><span id="outcome-title"></span></h3>
+                <p id="outcome-text"></p>
+                <div class="cascade-list">
+                    <strong>Cascade:</strong>
+                    <span id="cascade-items"></span>
+                </div>
             </div>
-        </div>
-
-        <div id="legend">
-            <h3>Health States</h3>
-            <div class="legend-item"><div class="legend-dot healthy"></div>Healthy (80-100%)</div>
-            <div class="legend-item"><div class="legend-dot stressed"></div>Stressed (50-79%)</div>
-            <div class="legend-item"><div class="legend-dot degraded"></div>Degraded (25-49%)</div>
-            <div class="legend-item"><div class="legend-dot critical"></div>Critical (0-24%)</div>
-            <div class="divider"></div>
-            <h3>Carriers</h3>
-            <div class="legend-role"><div class="legend-role-dot" style="background:#fbbf24"></div>Role (stable)</div>
-            <div class="legend-role"><div class="legend-role-dot" style="background:#f87171"></div>Role (at risk)</div>
         </div>
     </div>
 
@@ -788,7 +695,6 @@
         // DATA
         // ============================================
         const capacityNodes = [
-            // MEANING
             { id: "nuance", label: "Nuance", cluster: "Meaning", health: 100,
               tooltip: "Meaning that rides between words.",
               degradeOutcome: "Communication becomes blunt, robotic. Subtlety disappears.",
@@ -798,7 +704,6 @@
                 { name: "Diplomats", atRisk: false },
                 { name: "Therapists", atRisk: false },
                 { name: "Translators", atRisk: true },
-                { name: "Poets", atRisk: true },
                 { name: "Elders", atRisk: false }
               ]},
             { id: "subtext", label: "Subtext", cluster: "Meaning", health: 100,
@@ -808,41 +713,35 @@
               roles: [
                 { name: "Screenwriters", atRisk: true },
                 { name: "Negotiators", atRisk: false },
-                { name: "Satirists", atRisk: false },
                 { name: "Bartenders", atRisk: false },
                 { name: "Hairdressers", atRisk: false }
               ]},
             { id: "irony", label: "Irony", cluster: "Meaning", health: 100,
               tooltip: "Saying one thing while meaning another.",
               degradeOutcome: "Humor flattens. Cultural commentary disappears.",
-              boostOutcome: "Discourse gains sophistication. Critique works.",
+              boostOutcome: "Discourse gains sophistication.",
               roles: [
                 { name: "Comedians", atRisk: false },
                 { name: "Critics", atRisk: true },
-                { name: "Literary Authors", atRisk: true },
                 { name: "Cartoonists", atRisk: true }
               ]},
             { id: "hedging", label: "Hedging", cluster: "Meaning", health: 100,
               tooltip: "Soft certainty when reality is messy.",
               degradeOutcome: "Overconfidence everywhere. Liability increases.",
-              boostOutcome: "Statements become trustworthy. Credibility rises.",
+              boostOutcome: "Statements become trustworthy.",
               roles: [
                 { name: "Lawyers", atRisk: false },
                 { name: "Scientists", atRisk: false },
-                { name: "Risk Analysts", atRisk: false },
                 { name: "Doctors", atRisk: false }
               ]},
-
-            // PERSUASION
             { id: "framing", label: "Framing", cluster: "Persuasion", health: 100,
               tooltip: "The angle that changes interpretation.",
               degradeOutcome: "Arguments lose shape. Decisions stall.",
-              boostOutcome: "Messages land. Action follows attention.",
+              boostOutcome: "Messages land. Action follows.",
               roles: [
                 { name: "Journalists", atRisk: true },
                 { name: "Politicians", atRisk: false },
-                { name: "Marketers", atRisk: false },
-                { name: "Activists", atRisk: false }
+                { name: "Marketers", atRisk: false }
               ]},
             { id: "authority", label: "Authority", cluster: "Persuasion", health: 100,
               tooltip: "Signals that trigger deference.",
@@ -851,7 +750,6 @@
               roles: [
                 { name: "Executives", atRisk: false },
                 { name: "Professors", atRisk: false },
-                { name: "Surgeons", atRisk: false },
                 { name: "Judges", atRisk: false }
               ]},
             { id: "socialproof", label: "Social Proof", cluster: "Persuasion", health: 100,
@@ -861,23 +759,17 @@
               roles: [
                 { name: "Marketers", atRisk: false },
                 { name: "Influencers", atRisk: false },
-                { name: "Community Organizers", atRisk: true },
                 { name: "Neighbors", atRisk: false }
               ]},
-
-            // SOCIAL
             { id: "trust", label: "Trust", cluster: "Social", health: 100,
               tooltip: "How humans decide 'safe, real, reliable.'",
-              degradeOutcome: "CRITICAL. Adoption stops. Relationships break. Nothing scales.",
-              boostOutcome: "Everything unlocks. Cooperation becomes possible.",
+              degradeOutcome: "CRITICAL. Adoption stops. Nothing scales.",
+              boostOutcome: "Everything unlocks. Cooperation possible.",
               roles: [
                 { name: "Teachers", atRisk: true },
                 { name: "Nurses", atRisk: true },
-                { name: "Primary Care Doctors", atRisk: true },
-                { name: "Clergy", atRisk: false },
                 { name: "Parents", atRisk: false },
                 { name: "Grandparents", atRisk: false },
-                { name: "Corner Store Owners", atRisk: true },
                 { name: "Librarians", atRisk: true }
               ]},
             { id: "politeness", label: "Politeness", cluster: "Social", health: 100,
@@ -887,8 +779,7 @@
               roles: [
                 { name: "Hospitality Workers", atRisk: true },
                 { name: "Customer Service", atRisk: true },
-                { name: "Diplomats", atRisk: false },
-                { name: "Flight Attendants", atRisk: false }
+                { name: "Diplomats", atRisk: false }
               ]},
             { id: "facesaving", label: "Face-Saving", cluster: "Social", health: 100,
               tooltip: "Protecting dignity in conversation.",
@@ -897,7 +788,6 @@
               roles: [
                 { name: "HR Professionals", atRisk: false },
                 { name: "Mediators", atRisk: false },
-                { name: "Managers", atRisk: false },
                 { name: "Family Therapists", atRisk: false }
               ]},
             { id: "status", label: "Status", cluster: "Social", health: 100,
@@ -909,8 +799,6 @@
                 { name: "Military Officers", atRisk: false },
                 { name: "Judges", atRisk: false }
               ]},
-
-            // CULTURE
             { id: "belonging", label: "Belonging", cluster: "Culture", health: 100,
               tooltip: "Signals of 'us' and 'them.'",
               degradeOutcome: "Communities fragment. Loyalty disappears.",
@@ -918,8 +806,6 @@
               roles: [
                 { name: "Community Organizers", atRisk: true },
                 { name: "Coaches", atRisk: false },
-                { name: "Club Leaders", atRisk: false },
-                { name: "Block Captains", atRisk: true },
                 { name: "Union Reps", atRisk: true }
               ]},
             { id: "memegrammar", label: "Meme Grammar", cluster: "Culture", health: 100,
@@ -927,179 +813,146 @@
               degradeOutcome: "Content feels outdated. Relevance lost.",
               boostOutcome: "Content spreads. Engagement rises.",
               roles: [
-                { name: "Social Media Managers", atRisk: false },
                 { name: "Content Creators", atRisk: false },
                 { name: "Youth Workers", atRisk: true },
                 { name: "Teens", atRisk: false }
               ]},
             { id: "idioms", label: "Idioms", cluster: "Culture", health: 100,
               tooltip: "Compressed cultural memory.",
-              degradeOutcome: "Speech feels foreign. Intelligence questioned.",
-              boostOutcome: "Communication feels native. Understanding accelerates.",
+              degradeOutcome: "Speech feels foreign.",
+              boostOutcome: "Communication feels native.",
               roles: [
                 { name: "Translators", atRisk: true },
-                { name: "Language Teachers", atRisk: true },
-                { name: "Local Journalists", atRisk: true },
                 { name: "Elders", atRisk: false },
                 { name: "Grandparents", atRisk: false }
               ]},
             { id: "taboos", label: "Taboos", cluster: "Culture", health: 100,
               tooltip: "What not to say, and how we avoid it.",
-              degradeOutcome: "Social backlash. PR crises. Boundaries violated.",
+              degradeOutcome: "Social backlash. Boundaries violated.",
               boostOutcome: "Risk controlled. Limits maintained.",
               roles: [
                 { name: "Editors", atRisk: true },
                 { name: "PR Professionals", atRisk: false },
-                { name: "Compliance Officers", atRisk: false },
                 { name: "Elders", atRisk: false }
               ]},
             { id: "humor", label: "Humor", cluster: "Culture", health: 100,
               tooltip: "Bonding via surprise + timing.",
-              degradeOutcome: "Bonding fails. Everything becomes tedious.",
+              degradeOutcome: "Bonding fails. Everything tedious.",
               boostOutcome: "Connection happens. Messages stick.",
               roles: [
                 { name: "Comedians", atRisk: false },
                 { name: "Writers", atRisk: true },
-                { name: "Camp Counselors", atRisk: false },
-                { name: "Open Mic Hosts", atRisk: false }
+                { name: "DJs", atRisk: false }
               ]},
             { id: "freshness", label: "Freshness", cluster: "Culture", health: 100,
-              tooltip: "Staying aligned with the moving present.",
-              degradeOutcome: "Everything feels stale. The model feels 'old'.",
-              boostOutcome: "Outputs feel current. Relevance maintained.",
+              tooltip: "Staying aligned with the present.",
+              degradeOutcome: "Everything feels stale.",
+              boostOutcome: "Outputs feel current.",
               roles: [
-                { name: "Trend Forecasters", atRisk: false },
                 { name: "Journalists", atRisk: true },
                 { name: "Youth Workers", atRisk: true },
                 { name: "DJs", atRisk: false }
               ]},
-
-            // EMOTION
             { id: "empathy", label: "Empathy", cluster: "Emotion", health: 100,
               tooltip: "Recognizing and responding to feelings.",
-              degradeOutcome: "Help becomes hollow. 'Answering' replaces 'helping'.",
+              degradeOutcome: "Help becomes hollow.",
               boostOutcome: "Interactions heal. People feel seen.",
               roles: [
                 { name: "Therapists", atRisk: false },
                 { name: "Nurses", atRisk: true },
-                { name: "Social Workers", atRisk: true },
                 { name: "Caregivers", atRisk: true },
-                { name: "Home Health Aides", atRisk: true },
-                { name: "Hairdressers", atRisk: false },
                 { name: "Bartenders", atRisk: false }
               ]},
             { id: "grief", label: "Grief Language", cluster: "Emotion", health: 100,
               tooltip: "How humans speak loss.",
-              degradeOutcome: "Loss handled badly. Humans unseen in pain.",
-              boostOutcome: "Loss honored. Hardest moments met with grace.",
+              degradeOutcome: "Loss handled badly.",
+              boostOutcome: "Hardest moments met with grace.",
               roles: [
                 { name: "Hospice Workers", atRisk: true },
-                { name: "Funeral Directors", atRisk: false },
                 { name: "Chaplains", atRisk: false },
-                { name: "Grief Counselors", atRisk: false },
                 { name: "Neighbors", atRisk: false }
               ]},
             { id: "hope", label: "Hope", cluster: "Emotion", health: 100,
               tooltip: "Future-making in words.",
-              degradeOutcome: "Motivation dies. Futures stop being built.",
+              degradeOutcome: "Motivation dies. Futures stop.",
               boostOutcome: "Action resumes. Possibility returns.",
               roles: [
                 { name: "Coaches", atRisk: false },
                 { name: "Teachers", atRisk: true },
-                { name: "Activists", atRisk: false },
-                { name: "Religious Leaders", atRisk: false },
-                { name: "Parents", atRisk: false },
-                { name: "Mentors", atRisk: false }
+                { name: "Parents", atRisk: false }
               ]},
             { id: "shame", label: "Shame", cluster: "Emotion", health: 100,
-              tooltip: "Threat to belonging; triggers concealment.",
-              degradeOutcome: "Ethics fails. Harmful behavior unchecked.",
-              boostOutcome: "Boundaries hold. Accountability functions.",
+              tooltip: "Threat to belonging.",
+              degradeOutcome: "Ethics fails. Behavior unchecked.",
+              boostOutcome: "Boundaries hold.",
               roles: [
                 { name: "Therapists", atRisk: false },
-                { name: "Ethicists", atRisk: false },
                 { name: "Elders", atRisk: false },
                 { name: "Parents", atRisk: false }
               ]},
             { id: "angercontrol", label: "De-escalation", cluster: "Emotion", health: 100,
               tooltip: "Reducing heat without surrender.",
               degradeOutcome: "Conflicts spiral. Polarization accelerates.",
-              boostOutcome: "Heat reduces. Space for solutions appears.",
+              boostOutcome: "Heat reduces. Solutions appear.",
               roles: [
                 { name: "Moderators", atRisk: true },
-                { name: "Crisis Counselors", atRisk: false },
-                { name: "Hostage Negotiators", atRisk: false },
                 { name: "ER Nurses", atRisk: true },
-                { name: "Teachers", atRisk: true },
-                { name: "Bouncers", atRisk: false }
+                { name: "Teachers", atRisk: true }
               ]},
-
-            // JUDGMENT
             { id: "taste", label: "Taste", cluster: "Judgment", health: 100,
-              tooltip: "Aesthetic judgment without explicit rules.",
-              degradeOutcome: "Quality undetectable. Everything mediocre.",
+              tooltip: "Aesthetic judgment without rules.",
+              degradeOutcome: "Quality undetectable. Mediocrity.",
               boostOutcome: "Quality emerges. 'Rightness' achieved.",
               roles: [
                 { name: "Curators", atRisk: true },
                 { name: "Editors", atRisk: true },
-                { name: "Designers", atRisk: false },
-                { name: "Art Directors", atRisk: false },
-                { name: "Chefs", atRisk: false }
+                { name: "Designers", atRisk: false }
               ]},
             { id: "clarity", label: "Clarity", cluster: "Judgment", health: 100,
               tooltip: "Making meaning easy to grasp.",
-              degradeOutcome: "Comprehension fails. Meaning drowns in noise.",
-              boostOutcome: "Understanding improves. Signal cuts through.",
+              degradeOutcome: "Comprehension fails. Noise.",
+              boostOutcome: "Understanding improves.",
               roles: [
                 { name: "Technical Writers", atRisk: true },
                 { name: "Teachers", atRisk: true },
-                { name: "Explainer Journalists", atRisk: true },
                 { name: "UX Writers", atRisk: false }
               ]},
             { id: "timing", label: "Timing", cluster: "Judgment", health: 100,
               tooltip: "When to land the point.",
-              degradeOutcome: "Impact lost. Humor fails. Points land wrong.",
-              boostOutcome: "Impact maximized. Content becomes performance.",
+              degradeOutcome: "Impact lost. Points land wrong.",
+              boostOutcome: "Impact maximized.",
               roles: [
                 { name: "Comedians", atRisk: false },
                 { name: "Directors", atRisk: false },
-                { name: "Traders", atRisk: false },
-                { name: "DJs", atRisk: false },
-                { name: "Musicians", atRisk: false }
+                { name: "DJs", atRisk: false }
               ]},
-
-            // COGNITION
             { id: "commonSense", label: "Common Sense", cluster: "Cognition", health: 100,
               tooltip: "Unspoken defaults about the world.",
-              degradeOutcome: "Outputs feel alien. 'Weird AI' syndrome.",
-              boostOutcome: "Outputs feel grounded. Normalcy achieved.",
+              degradeOutcome: "Outputs feel alien. 'Weird AI.'",
+              boostOutcome: "Outputs feel grounded.",
               roles: [
                 { name: "Parents", atRisk: false },
                 { name: "Teachers", atRisk: true },
                 { name: "Grandparents", atRisk: false },
-                { name: "Farmers", atRisk: true },
-                { name: "Tradespeople", atRisk: false }
+                { name: "Farmers", atRisk: true }
               ]},
             { id: "analogy", label: "Analogy", cluster: "Cognition", health: 100,
               tooltip: "Mapping one domain onto another.",
-              degradeOutcome: "Hard things stay hard. Learning stalls.",
-              boostOutcome: "Complex becomes clear. Understanding transfers.",
+              degradeOutcome: "Hard things stay hard.",
+              boostOutcome: "Complex becomes clear.",
               roles: [
                 { name: "Teachers", atRisk: true },
-                { name: "Science Communicators", atRisk: false },
                 { name: "Coaches", atRisk: false },
                 { name: "Writers", atRisk: true }
               ]},
             { id: "synthesis", label: "Synthesis", cluster: "Cognition", health: 100,
-              tooltip: "Combining fragments into a coherent whole.",
-              degradeOutcome: "Insight dies. Just fragments, no whole.",
-              boostOutcome: "Insight emerges. Patterns revealed.",
+              tooltip: "Combining fragments into a whole.",
+              degradeOutcome: "Insight dies. Just fragments.",
+              boostOutcome: "Patterns revealed.",
               roles: [
                 { name: "Researchers", atRisk: false },
-                { name: "Analysts", atRisk: false },
-                { name: "Investigative Journalists", atRisk: true },
-                { name: "Consultants", atRisk: false },
-                { name: "Detectives", atRisk: false }
+                { name: "Journalists", atRisk: true },
+                { name: "Consultants", atRisk: false }
               ]}
         ];
 
@@ -1133,22 +986,18 @@
             { source: "trust", target: "belonging", type: "reinforces", weight: 0.5 },
             { source: "trust", target: "hope", type: "enables", weight: 0.6 },
             { source: "empathy", target: "angercontrol", type: "reinforces", weight: 0.5 },
-            { source: "clarity", target: "analogy", type: "reinforces", weight: 0.4 },
             { source: "taste", target: "nuance", type: "reinforces", weight: 0.5 },
             { source: "hope", target: "empathy", type: "reinforces", weight: 0.4 }
         ];
 
-        // ============================================
-        // SETUP
-        // ============================================
         const clusterCenters = {
-            'Meaning': { x: 0.15, y: 0.22 },
-            'Persuasion': { x: 0.5, y: 0.1 },
-            'Social': { x: 0.85, y: 0.22 },
-            'Culture': { x: 0.12, y: 0.72 },
-            'Emotion': { x: 0.5, y: 0.88 },
-            'Judgment': { x: 0.88, y: 0.72 },
-            'Cognition': { x: 0.5, y: 0.48 }
+            'Meaning': { x: 0.15, y: 0.2 },
+            'Persuasion': { x: 0.5, y: 0.08 },
+            'Social': { x: 0.85, y: 0.2 },
+            'Culture': { x: 0.12, y: 0.65 },
+            'Emotion': { x: 0.5, y: 0.78 },
+            'Judgment': { x: 0.88, y: 0.65 },
+            'Cognition': { x: 0.5, y: 0.42 }
         };
 
         const clusterColors = {
@@ -1164,9 +1013,9 @@
         const linkTypeLabels = {
             'reinforces': 'reinforces',
             'enables': 'enables',
-            'tensions': 'tensions with',
-            'composed-of': 'composed of',
-            'co-occurs': 'co-occurs with',
+            'tensions': 'tensions',
+            'composed-of': 'part of',
+            'co-occurs': 'co-occurs',
             'requires': 'requires',
             'drives': 'drives',
             'feeds': 'feeds',
@@ -1177,94 +1026,50 @@
         const width = window.innerWidth;
         const height = window.innerHeight;
 
-        const svg = d3.select('#graph')
-            .attr('width', width)
-            .attr('height', height);
-
-        const linkGroup = svg.append('g').attr('class', 'links');
-        const roleLineGroup = svg.append('g').attr('class', 'role-lines');
-        const roleLabelGroup = svg.append('g').attr('class', 'role-labels');
-        const nodeGroup = svg.append('g').attr('class', 'nodes');
+        const svg = d3.select('#graph').attr('width', width).attr('height', height);
+        const linkGroup = svg.append('g');
+        const roleLineGroup = svg.append('g');
+        const roleLabelGroup = svg.append('g');
+        const nodeGroup = svg.append('g');
 
         capacityNodes.forEach(node => {
             const center = clusterCenters[node.cluster];
-            node.x = center.x * width + (Math.random() - 0.5) * 60;
-            node.y = center.y * height + (Math.random() - 0.5) * 60;
+            node.x = center.x * width + (Math.random() - 0.5) * 50;
+            node.y = center.y * height + (Math.random() - 0.5) * 50;
         });
 
-        // ============================================
-        // SIMULATION
-        // ============================================
         const simulation = d3.forceSimulation(capacityNodes)
-            .force('link', d3.forceLink(capacityLinks).id(d => d.id).distance(80).strength(0.3))
-            .force('charge', d3.forceManyBody().strength(-250))
+            .force('link', d3.forceLink(capacityLinks).id(d => d.id).distance(70).strength(0.3))
+            .force('charge', d3.forceManyBody().strength(-200))
             .force('center', d3.forceCenter(width / 2, height / 2))
-            .force('collision', d3.forceCollide().radius(40))
-            .force('x', d3.forceX(d => clusterCenters[d.cluster].x * width).strength(0.08))
-            .force('y', d3.forceY(d => clusterCenters[d.cluster].y * height).strength(0.08));
+            .force('collision', d3.forceCollide().radius(35))
+            .force('x', d3.forceX(d => clusterCenters[d.cluster].x * width).strength(0.1))
+            .force('y', d3.forceY(d => clusterCenters[d.cluster].y * height).strength(0.1));
 
-        // ============================================
-        // DRAW LINKS
-        // ============================================
         const linkElements = linkGroup.selectAll('line')
-            .data(capacityLinks)
-            .join('line')
-            .attr('class', 'link-capacity')
-            .attr('stroke-width', 1.5);
+            .data(capacityLinks).join('line')
+            .attr('class', 'link-capacity').attr('stroke-width', 1.5);
 
-        // ============================================
-        // DRAW NODES
-        // ============================================
         const nodeElements = nodeGroup.selectAll('g')
-            .data(capacityNodes)
-            .join('g')
+            .data(capacityNodes).join('g')
             .attr('class', 'node-capacity health-healthy')
-            .call(d3.drag()
-                .on('start', dragstarted)
-                .on('drag', dragged)
-                .on('end', dragended));
+            .call(d3.drag().on('start', dragstarted).on('drag', dragged).on('end', dragended));
 
-        nodeElements.append('circle')
-            .attr('class', 'health-ring-bg')
-            .attr('r', 26)
-            .attr('fill', 'none')
-            .attr('stroke', '#1e293b')
-            .attr('stroke-width', 4);
-
-        nodeElements.append('circle')
-            .attr('class', 'health-ring')
-            .attr('r', 26)
-            .attr('stroke', '#22c55e')
-            .attr('stroke-dasharray', '163 163')
-            .attr('stroke-dashoffset', '0')
-            .attr('transform', 'rotate(-90)');
-
-        nodeElements.append('circle')
-            .attr('class', 'main-circle')
-            .attr('r', 20)
+        nodeElements.append('circle').attr('class', 'health-ring-bg').attr('r', 22)
+            .attr('fill', 'none').attr('stroke', '#1e293b').attr('stroke-width', 3);
+        nodeElements.append('circle').attr('class', 'health-ring').attr('r', 22)
+            .attr('stroke', '#22c55e').attr('stroke-dasharray', '138 138')
+            .attr('stroke-dashoffset', '0').attr('transform', 'rotate(-90)');
+        nodeElements.append('circle').attr('class', 'main-circle').attr('r', 17)
             .attr('fill', d => clusterColors[d.cluster]);
+        nodeElements.append('text').attr('class', 'node-label').attr('dy', 30).text(d => d.label);
+        nodeElements.append('text').attr('class', 'health-text').attr('dy', 3).text('100');
 
-        nodeElements.append('text')
-            .attr('class', 'node-label')
-            .attr('dy', 36)
-            .text(d => d.label);
-
-        nodeElements.append('text')
-            .attr('class', 'health-text')
-            .attr('dy', 4)
-            .text('100');
-
-        // ============================================
-        // STATE
-        // ============================================
         let currentMode = 'view';
         let selectedNode = null;
         let draggingNode = null;
         let roleElements = { lines: [], labels: [], bgs: [] };
 
-        // ============================================
-        // MODE SWITCHING
-        // ============================================
         document.querySelectorAll('.mode-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
@@ -1273,55 +1078,43 @@
             });
         });
 
-        // ============================================
-        // RESET
-        // ============================================
         document.getElementById('reset-btn').addEventListener('click', () => {
-            capacityNodes.forEach(node => node.health = 100);
+            capacityNodes.forEach(n => n.health = 100);
             updateAllVisuals();
-            hideOutcomePanel();
-            hideRoles();
-            hideInfoPanel();
-            hideDragPanel();
-            linkElements.classed('cascade-active', false).classed('cascade-danger', false).classed('cascade-boost', false).classed('drag-highlight', false);
+            hideAll();
         });
 
-        // ============================================
-        // CLICK HANDLING
-        // ============================================
         nodeElements.on('click', (event, d) => {
             event.stopPropagation();
-
             if (currentMode === 'view') {
                 selectNode(d);
             } else {
                 const delta = currentMode === 'degrade' ? -25 : 25;
                 d.health = Math.max(0, Math.min(100, d.health + delta));
-                const cascadeEffects = calculateCascade(d, delta);
-                cascadeEffects.forEach(effect => {
-                    const node = capacityNodes.find(n => n.id === effect.id);
-                    if (node) node.health = Math.max(0, Math.min(100, node.health + effect.delta));
+                const cascade = calculateCascade(d, delta);
+                cascade.forEach(e => {
+                    const n = capacityNodes.find(x => x.id === e.id);
+                    if (n) n.health = Math.max(0, Math.min(100, n.health + e.delta));
                 });
                 updateAllVisuals();
-                showOutcome(d, cascadeEffects, currentMode);
-                highlightCascadeLinks(d, cascadeEffects, currentMode);
+                showOutcome(d, cascade, currentMode);
+                highlightCascade(d, cascade, currentMode);
                 selectNode(d);
             }
         });
 
-        svg.on('click', () => {
+        svg.on('click', hideAll);
+
+        function hideAll() {
             hideRoles();
-            hideInfoPanel();
-            hideOutcomePanel();
-            hideDragPanel();
+            document.getElementById('info-panel').classList.remove('visible');
+            document.getElementById('outcome-panel').classList.remove('visible');
+            document.getElementById('drag-panel').classList.remove('visible');
             nodeElements.classed('selected', false);
             selectedNode = null;
-            linkElements.classed('cascade-active', false).classed('cascade-danger', false).classed('cascade-boost', false).classed('drag-highlight', false);
-        });
+            linkElements.classed('cascade-danger', false).classed('cascade-boost', false).classed('drag-highlight', false);
+        }
 
-        // ============================================
-        // NODE SELECTION & ROLES
-        // ============================================
         function selectNode(d) {
             hideRoles();
             selectedNode = d;
@@ -1330,406 +1123,235 @@
             showRoles(d);
         }
 
-        function showRoles(capacity) {
-            const roles = capacity.roles;
-            const numRoles = roles.length;
-            const baseRadius = 90;
-
-            roles.forEach((role, i) => {
-                const angle = (i / numRoles) * Math.PI * 2 - Math.PI / 2;
-                const radius = baseRadius + (i % 2) * 20;
-                const x = capacity.x + Math.cos(angle) * radius;
-                const y = capacity.y + Math.sin(angle) * radius;
-
-                const line = roleLineGroup.append('line')
-                    .attr('class', 'role-line')
-                    .attr('x1', capacity.x)
-                    .attr('y1', capacity.y)
-                    .attr('x2', x)
-                    .attr('y2', y);
-
-                const textWidth = role.name.length * 6 + 12;
-                const bg = roleLabelGroup.append('rect')
-                    .attr('class', 'role-label-bg')
-                    .attr('x', x - textWidth / 2)
-                    .attr('y', y - 8)
-                    .attr('width', textWidth)
-                    .attr('height', 16)
-                    .attr('rx', 8);
-
-                const label = roleLabelGroup.append('text')
-                    .attr('class', `role-label ${role.atRisk ? 'at-risk' : ''}`)
-                    .attr('x', x)
-                    .attr('y', y + 3)
-                    .text(role.name);
-
+        function showRoles(cap) {
+            const roles = cap.roles, num = roles.length, base = 75;
+            roles.forEach((r, i) => {
+                const ang = (i / num) * Math.PI * 2 - Math.PI / 2;
+                const rad = base + (i % 2) * 18;
+                const x = cap.x + Math.cos(ang) * rad, y = cap.y + Math.sin(ang) * rad;
+                const line = roleLineGroup.append('line').attr('class', 'role-line')
+                    .attr('x1', cap.x).attr('y1', cap.y).attr('x2', x).attr('y2', y);
+                const tw = r.name.length * 5.5 + 10;
+                const bg = roleLabelGroup.append('rect').attr('class', 'role-label-bg')
+                    .attr('x', x - tw/2).attr('y', y - 7).attr('width', tw).attr('height', 14).attr('rx', 7);
+                const lbl = roleLabelGroup.append('text')
+                    .attr('class', `role-label ${r.atRisk ? 'at-risk' : ''}`)
+                    .attr('x', x).attr('y', y + 3).text(r.name);
                 roleElements.lines.push(line);
                 roleElements.bgs.push(bg);
-                roleElements.labels.push(label);
-
+                roleElements.labels.push(lbl);
                 setTimeout(() => {
                     line.classed('visible', true);
                     bg.classed('visible', true);
-                    label.classed('visible', true);
-                }, i * 40);
+                    lbl.classed('visible', true);
+                }, i * 35);
             });
         }
 
         function hideRoles() {
-            roleElements.lines.forEach(el => el.remove());
-            roleElements.labels.forEach(el => el.remove());
-            roleElements.bgs.forEach(el => el.remove());
+            roleElements.lines.forEach(e => e.remove());
+            roleElements.labels.forEach(e => e.remove());
+            roleElements.bgs.forEach(e => e.remove());
             roleElements = { lines: [], labels: [], bgs: [] };
         }
 
         function updateRolePositions() {
             if (!selectedNode) return;
-            const capacity = selectedNode;
-            const roles = capacity.roles;
-            const numRoles = roles.length;
-            const baseRadius = 90;
-
-            roles.forEach((role, i) => {
-                const angle = (i / numRoles) * Math.PI * 2 - Math.PI / 2;
-                const radius = baseRadius + (i % 2) * 20;
-                const x = capacity.x + Math.cos(angle) * radius;
-                const y = capacity.y + Math.sin(angle) * radius;
-                const textWidth = role.name.length * 6 + 12;
-
+            const cap = selectedNode, roles = cap.roles, num = roles.length, base = 75;
+            roles.forEach((r, i) => {
+                const ang = (i / num) * Math.PI * 2 - Math.PI / 2;
+                const rad = base + (i % 2) * 18;
+                const x = cap.x + Math.cos(ang) * rad, y = cap.y + Math.sin(ang) * rad;
+                const tw = r.name.length * 5.5 + 10;
                 if (roleElements.lines[i]) {
-                    roleElements.lines[i].attr('x1', capacity.x).attr('y1', capacity.y).attr('x2', x).attr('y2', y);
-                    roleElements.bgs[i].attr('x', x - textWidth / 2).attr('y', y - 8);
+                    roleElements.lines[i].attr('x1', cap.x).attr('y1', cap.y).attr('x2', x).attr('y2', y);
+                    roleElements.bgs[i].attr('x', x - tw/2).attr('y', y - 7);
                     roleElements.labels[i].attr('x', x).attr('y', y + 3);
                 }
             });
         }
 
-        // ============================================
-        // INFO PANEL
-        // ============================================
         function showInfoPanel(d) {
             document.getElementById('node-title').textContent = d.label;
             const badge = document.getElementById('cluster-badge');
             badge.textContent = d.cluster;
             badge.style.background = clusterColors[d.cluster];
             document.getElementById('node-tooltip').textContent = d.tooltip;
-
-            const rolesList = document.getElementById('roles-list');
-            rolesList.innerHTML = '';
-            d.roles.forEach(role => {
-                const span = document.createElement('span');
-                span.className = `role-tag ${role.atRisk ? 'at-risk' : ''}`;
-                span.textContent = role.name;
-                rolesList.appendChild(span);
+            const list = document.getElementById('roles-list');
+            list.innerHTML = '';
+            d.roles.forEach(r => {
+                const s = document.createElement('span');
+                s.className = `role-tag ${r.atRisk ? 'at-risk' : ''}`;
+                s.textContent = r.name;
+                list.appendChild(s);
             });
-
             document.getElementById('info-panel').classList.add('visible');
         }
 
-        function hideInfoPanel() {
-            document.getElementById('info-panel').classList.remove('visible');
-        }
-
-        // ============================================
-        // DRAG PANEL - NEW
-        // ============================================
         function showDragPanel(d) {
             draggingNode = d;
-            const panel = document.getElementById('drag-panel');
-
-            // Node name
             document.getElementById('drag-node-name').textContent = d.label;
-
-            // Find all connected nodes
-            const connections = getConnections(d);
+            const conns = getConnections(d);
             const depList = document.getElementById('dependency-list');
             depList.innerHTML = '';
-
-            connections.forEach(conn => {
+            conns.forEach(c => {
                 const item = document.createElement('div');
                 item.className = 'dependency-item';
-                item.innerHTML = `
-                    <span class="dep-name">${conn.node.label}</span>
-                    <span class="dep-type ${conn.type}">${linkTypeLabels[conn.type] || conn.type}</span>
-                `;
+                item.innerHTML = `<span class="dep-name">${c.node.label}</span><span class="dep-type ${c.type}">${linkTypeLabels[c.type] || c.type}</span>`;
                 depList.appendChild(item);
             });
-
-            // Calculate predicted cascade
-            const predictedCascade = calculateCascade(d, -25);
-            const cascadePreview = document.getElementById('cascade-preview');
-            const cascadeEffects = document.getElementById('cascade-effects');
-            cascadeEffects.innerHTML = '';
-
-            if (predictedCascade.length > 0) {
-                predictedCascade.slice(0, 8).forEach(effect => {
-                    const span = document.createElement('span');
-                    span.className = `cascade-effect ${effect.delta > 0 ? 'positive' : ''}`;
-                    const nodeName = capacityNodes.find(n => n.id === effect.id)?.label || effect.id;
-                    span.textContent = `${nodeName} ${effect.delta > 0 ? '+' : ''}${effect.delta}%`;
-                    cascadeEffects.appendChild(span);
-                });
-            } else {
-                cascadeEffects.innerHTML = '<span style="color:#64748b;font-size:10px;">Minimal cascade</span>';
-            }
-
-            // Calculate system impact
-            const totalImpact = predictedCascade.reduce((sum, e) => sum + e.delta, 0) - 25;
-            const avgImpact = totalImpact / capacityNodes.length;
-            const impactValue = document.getElementById('impact-value');
-            impactValue.textContent = `${avgImpact > 0 ? '+' : ''}${avgImpact.toFixed(1)}%`;
-            impactValue.className = `impact-value ${avgImpact > 0 ? 'positive' : ''}`;
-
-            panel.classList.add('visible');
-        }
-
-        function hideDragPanel() {
-            document.getElementById('drag-panel').classList.remove('visible');
-            draggingNode = null;
+            const cascade = calculateCascade(d, -25);
+            const effects = document.getElementById('cascade-effects');
+            effects.innerHTML = '';
+            cascade.slice(0, 6).forEach(e => {
+                const s = document.createElement('span');
+                s.className = `cascade-effect ${e.delta > 0 ? 'positive' : ''}`;
+                s.textContent = `${capacityNodes.find(n => n.id === e.id)?.label || e.id} ${e.delta > 0 ? '+' : ''}${e.delta}%`;
+                effects.appendChild(s);
+            });
+            if (cascade.length === 0) effects.innerHTML = '<span style="color:#64748b;font-size:9px;">Minimal cascade</span>';
+            const impact = (cascade.reduce((s, e) => s + e.delta, 0) - 25) / capacityNodes.length;
+            const iv = document.getElementById('impact-value');
+            iv.textContent = `${impact > 0 ? '+' : ''}${impact.toFixed(1)}%`;
+            iv.className = `impact-value ${impact > 0 ? 'positive' : ''}`;
+            document.getElementById('drag-panel').classList.add('visible');
         }
 
         function getConnections(node) {
-            const connections = [];
-            capacityLinks.forEach(link => {
-                const sourceId = link.source.id || link.source;
-                const targetId = link.target.id || link.target;
-
-                if (sourceId === node.id) {
-                    const targetNode = capacityNodes.find(n => n.id === targetId);
-                    if (targetNode) connections.push({ node: targetNode, type: link.type, direction: 'out' });
-                } else if (targetId === node.id) {
-                    const sourceNode = capacityNodes.find(n => n.id === sourceId);
-                    if (sourceNode) connections.push({ node: sourceNode, type: link.type, direction: 'in' });
+            const conns = [];
+            capacityLinks.forEach(l => {
+                const s = l.source.id || l.source, t = l.target.id || l.target;
+                if (s === node.id) {
+                    const n = capacityNodes.find(x => x.id === t);
+                    if (n) conns.push({ node: n, type: l.type });
+                } else if (t === node.id) {
+                    const n = capacityNodes.find(x => x.id === s);
+                    if (n) conns.push({ node: n, type: l.type });
                 }
             });
-            return connections;
+            return conns;
         }
 
-        // ============================================
-        // CASCADE LOGIC
-        // ============================================
-        function calculateCascade(sourceNode, sourceDelta) {
-            const effects = [];
-            const visited = new Set([sourceNode.id]);
-
-            function propagate(nodeId, delta, depth) {
+        function calculateCascade(src, delta) {
+            const effects = [], visited = new Set([src.id]);
+            function prop(nid, d, depth) {
                 if (depth > 3) return;
-
-                capacityLinks.forEach(link => {
-                    let targetId = null;
-                    let weight = Math.abs(link.weight);
-
-                    if ((link.source.id || link.source) === nodeId) {
-                        targetId = link.target.id || link.target;
-                    } else if ((link.target.id || link.target) === nodeId) {
-                        targetId = link.source.id || link.source;
-                    }
-
-                    if (!targetId || visited.has(targetId)) return;
-
-                    let effectDelta = 0;
-                    if (link.type === 'tensions') {
-                        effectDelta = -delta * weight * 0.4;
-                    } else if (link.type === 'enables' || link.type === 'requires') {
-                        effectDelta = delta * weight * 0.6;
-                    } else if (link.type === 'reinforces' || link.type === 'supports') {
-                        effectDelta = delta * weight * 0.5;
-                    } else {
-                        effectDelta = delta * weight * 0.3;
-                    }
-
-                    effectDelta = effectDelta * (1 - depth * 0.25);
-
-                    if (Math.abs(effectDelta) >= 3) {
-                        visited.add(targetId);
-                        effects.push({ id: targetId, delta: Math.round(effectDelta), fromLink: link.type });
-                        propagate(targetId, effectDelta, depth + 1);
+                capacityLinks.forEach(l => {
+                    let tid = null, w = Math.abs(l.weight);
+                    if ((l.source.id || l.source) === nid) tid = l.target.id || l.target;
+                    else if ((l.target.id || l.target) === nid) tid = l.source.id || l.source;
+                    if (!tid || visited.has(tid)) return;
+                    let ed = l.type === 'tensions' ? -d * w * 0.4 :
+                             (l.type === 'enables' || l.type === 'requires') ? d * w * 0.6 :
+                             (l.type === 'reinforces' || l.type === 'supports') ? d * w * 0.5 : d * w * 0.3;
+                    ed *= (1 - depth * 0.25);
+                    if (Math.abs(ed) >= 3) {
+                        visited.add(tid);
+                        effects.push({ id: tid, delta: Math.round(ed) });
+                        prop(tid, ed, depth + 1);
                     }
                 });
             }
-
-            propagate(sourceNode.id, sourceDelta, 0);
+            prop(src.id, delta, 0);
             return effects;
         }
 
-        // ============================================
-        // VISUAL UPDATES
-        // ============================================
         function updateAllVisuals() {
             nodeElements.each(function(d) {
-                const group = d3.select(this);
-                const health = d.health;
-
-                let classStr = `node-capacity health-${getHealthState(health)}`;
-                if (selectedNode && selectedNode.id === d.id) classStr += ' selected';
-                if (draggingNode && draggingNode.id === d.id) classStr += ' dragging';
-                group.attr('class', classStr);
-
-                const circumference = 163;
-                const dashoffset = circumference * (1 - health / 100);
-                group.select('.health-ring')
-                    .attr('stroke-dashoffset', dashoffset)
-                    .attr('stroke', getHealthColor(health));
-
-                group.select('.health-text').text(Math.round(health));
+                const g = d3.select(this), h = d.health;
+                let cls = `node-capacity health-${h >= 80 ? 'healthy' : h >= 50 ? 'stressed' : h >= 25 ? 'degraded' : 'critical'}`;
+                if (selectedNode?.id === d.id) cls += ' selected';
+                if (draggingNode?.id === d.id) cls += ' dragging';
+                g.attr('class', cls);
+                g.select('.health-ring').attr('stroke-dashoffset', 138 * (1 - h / 100))
+                    .attr('stroke', h >= 80 ? '#22c55e' : h >= 50 ? '#fbbf24' : h >= 25 ? '#f97316' : '#ef4444');
+                g.select('.health-text').text(Math.round(h));
             });
-
-            updateSystemHealth();
+            const avg = capacityNodes.reduce((s, n) => s + n.health, 0) / capacityNodes.length;
+            const col = avg >= 80 ? '#22c55e' : avg >= 50 ? '#fbbf24' : avg >= 25 ? '#f97316' : '#ef4444';
+            document.getElementById('health-fill').style.width = `${avg}%`;
+            document.getElementById('health-fill').style.background = col;
+            document.getElementById('health-value').textContent = `${Math.round(avg)}%`;
+            document.getElementById('health-value').style.color = col;
         }
 
-        function getHealthState(health) {
-            if (health >= 80) return 'healthy';
-            if (health >= 50) return 'stressed';
-            if (health >= 25) return 'degraded';
-            return 'critical';
-        }
-
-        function getHealthColor(health) {
-            if (health >= 80) return '#22c55e';
-            if (health >= 50) return '#fbbf24';
-            if (health >= 25) return '#f97316';
-            return '#ef4444';
-        }
-
-        function updateSystemHealth() {
-            const avgHealth = capacityNodes.reduce((sum, n) => sum + n.health, 0) / capacityNodes.length;
-            document.getElementById('health-fill').style.width = `${avgHealth}%`;
-            document.getElementById('health-fill').style.background = getHealthColor(avgHealth);
-            document.getElementById('health-value').textContent = `${Math.round(avgHealth)}%`;
-            document.getElementById('health-value').style.color = getHealthColor(avgHealth);
-        }
-
-        // ============================================
-        // OUTCOME PANEL
-        // ============================================
-        function showOutcome(node, cascadeEffects, mode) {
-            const panel = document.getElementById('outcome-panel');
-            const isDegrading = mode === 'degrade';
-
-            document.getElementById('outcome-title').textContent = `${node.label} ${isDegrading ? 'Degraded' : 'Boosted'}`;
-            document.getElementById('outcome-text').textContent = isDegrading ? node.degradeOutcome : node.boostOutcome;
-            panel.querySelector('.status-dot').style.background = isDegrading ? '#ef4444' : '#22c55e';
-
-            const cascadeItems = document.getElementById('cascade-items');
-            cascadeItems.innerHTML = '';
-            if (cascadeEffects.length > 0) {
-                cascadeEffects.forEach(effect => {
-                    const span = document.createElement('span');
-                    span.className = `cascade-item ${effect.delta > 0 ? 'boost' : ''}`;
-                    const nodeName = capacityNodes.find(n => n.id === effect.id)?.label || effect.id;
-                    span.textContent = `${nodeName} ${effect.delta > 0 ? '+' : ''}${effect.delta}%`;
-                    cascadeItems.appendChild(span);
+        function showOutcome(node, cascade, mode) {
+            const deg = mode === 'degrade';
+            document.getElementById('outcome-title').textContent = `${node.label} ${deg ? 'Degraded' : 'Boosted'}`;
+            document.getElementById('outcome-text').textContent = deg ? node.degradeOutcome : node.boostOutcome;
+            document.querySelector('#outcome-panel .status-dot').style.background = deg ? '#ef4444' : '#22c55e';
+            const items = document.getElementById('cascade-items');
+            items.innerHTML = '';
+            if (cascade.length) {
+                cascade.forEach(e => {
+                    const s = document.createElement('span');
+                    s.className = `cascade-item ${e.delta > 0 ? 'boost' : ''}`;
+                    s.textContent = `${capacityNodes.find(n => n.id === e.id)?.label} ${e.delta > 0 ? '+' : ''}${e.delta}%`;
+                    items.appendChild(s);
                 });
-            } else {
-                cascadeItems.innerHTML = '<span style="color:#64748b">No cascade</span>';
-            }
-
-            panel.classList.add('visible');
+            } else items.innerHTML = '<span style="color:#64748b">No cascade</span>';
+            document.getElementById('outcome-panel').classList.add('visible');
         }
 
-        function hideOutcomePanel() {
-            document.getElementById('outcome-panel').classList.remove('visible');
-        }
-
-        // ============================================
-        // CASCADE LINK HIGHLIGHTING
-        // ============================================
-        function highlightCascadeLinks(sourceNode, cascadeEffects, mode) {
-            linkElements.classed('cascade-active', false).classed('cascade-danger', false).classed('cascade-boost', false);
-            const affectedIds = new Set([sourceNode.id, ...cascadeEffects.map(e => e.id)]);
-
-            linkElements.each(function(d) {
-                const sourceId = d.source.id || d.source;
-                const targetId = d.target.id || d.target;
-                if (affectedIds.has(sourceId) && affectedIds.has(targetId)) {
-                    d3.select(this).classed(mode === 'degrade' ? 'cascade-danger' : 'cascade-boost', true);
-                }
+        function highlightCascade(src, cascade, mode) {
+            linkElements.classed('cascade-danger', false).classed('cascade-boost', false);
+            const ids = new Set([src.id, ...cascade.map(e => e.id)]);
+            linkElements.each(function(l) {
+                const s = l.source.id || l.source, t = l.target.id || l.target;
+                if (ids.has(s) && ids.has(t)) d3.select(this).classed(mode === 'degrade' ? 'cascade-danger' : 'cascade-boost', true);
             });
         }
 
         function highlightDragLinks(node) {
-            const connectedIds = new Set([node.id]);
-            capacityLinks.forEach(link => {
-                const sourceId = link.source.id || link.source;
-                const targetId = link.target.id || link.target;
-                if (sourceId === node.id) connectedIds.add(targetId);
-                if (targetId === node.id) connectedIds.add(sourceId);
+            const ids = new Set([node.id]);
+            capacityLinks.forEach(l => {
+                const s = l.source.id || l.source, t = l.target.id || l.target;
+                if (s === node.id) ids.add(t);
+                if (t === node.id) ids.add(s);
             });
-
-            linkElements.classed('drag-highlight', d => {
-                const sourceId = d.source.id || d.source;
-                const targetId = d.target.id || d.target;
-                return sourceId === node.id || targetId === node.id;
+            linkElements.classed('drag-highlight', l => {
+                const s = l.source.id || l.source, t = l.target.id || l.target;
+                return s === node.id || t === node.id;
             });
-
-            nodeElements.classed('connected-drag', n => connectedIds.has(n.id) && n.id !== node.id);
-            nodeElements.classed('faded-drag', n => !connectedIds.has(n.id));
+            nodeElements.classed('connected-drag', n => ids.has(n.id) && n.id !== node.id);
+            nodeElements.classed('faded-drag', n => !ids.has(n.id));
         }
 
         function clearDragHighlights() {
             linkElements.classed('drag-highlight', false);
-            nodeElements.classed('connected-drag', false);
-            nodeElements.classed('faded-drag', false);
-            nodeElements.classed('dragging', false);
+            nodeElements.classed('connected-drag', false).classed('faded-drag', false).classed('dragging', false);
         }
 
-        // ============================================
-        // SIMULATION TICK
-        // ============================================
         simulation.on('tick', () => {
-            linkElements
-                .attr('x1', d => d.source.x)
-                .attr('y1', d => d.source.y)
-                .attr('x2', d => d.target.x)
-                .attr('y2', d => d.target.y);
-
+            linkElements.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+                .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
             nodeElements.attr('transform', d => `translate(${d.x},${d.y})`);
-
             if (selectedNode) updateRolePositions();
         });
 
-        // ============================================
-        // DRAG - ENHANCED
-        // ============================================
         function dragstarted(event, d) {
             if (!event.active) simulation.alphaTarget(0.3).restart();
-            d.fx = d.x;
-            d.fy = d.y;
-
-            // Show drag panel and highlights
+            d.fx = d.x; d.fy = d.y;
             nodeElements.classed('dragging', n => n.id === d.id);
             highlightDragLinks(d);
             showDragPanel(d);
         }
 
-        function dragged(event, d) {
-            d.fx = event.x;
-            d.fy = event.y;
-        }
+        function dragged(event, d) { d.fx = event.x; d.fy = event.y; }
 
         function dragended(event, d) {
             if (!event.active) simulation.alphaTarget(0);
-            d.fx = null;
-            d.fy = null;
-
+            d.fx = null; d.fy = null;
             clearDragHighlights();
-            hideDragPanel();
-
-            // Restore selection state if exists
-            if (selectedNode) {
-                nodeElements.classed('selected', n => n.id === selectedNode.id);
-            }
+            document.getElementById('drag-panel').classList.remove('visible');
+            draggingNode = null;
+            if (selectedNode) nodeElements.classed('selected', n => n.id === selectedNode.id);
         }
 
-        // ============================================
-        // RESIZE
-        // ============================================
         window.addEventListener('resize', () => {
-            const newWidth = window.innerWidth;
-            const newHeight = window.innerHeight;
-            svg.attr('width', newWidth).attr('height', newHeight);
-            simulation.force('center', d3.forceCenter(newWidth / 2, newHeight / 2));
-            simulation.alpha(0.3).restart();
+            const w = window.innerWidth, h = window.innerHeight;
+            svg.attr('width', w).attr('height', h);
+            simulation.force('center', d3.forceCenter(w / 2, h / 2)).alpha(0.3).restart();
         });
 
         updateAllVisuals();
