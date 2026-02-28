@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Human Substrate — Model</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'DM Mono', 'Courier New', monospace;
+  background: #0a0a0f;
+  color: #e2e8f0;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* ENTRY OVERLAY */
+#entry-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  background: #0a0a0f;
+  transition: opacity 0.8s ease;
+}
+#entry-overlay.dissolving { opacity: 0; pointer-events: none; }
+
+.entry-inner {
+  max-width: 480px; padding: 48px 40px; position: relative;
+}
+.entry-inner::before, .entry-inner::after {
+  content: ''; position: absolute;
+  width: 20px; height: 20px; border-color: #334155; border-style: solid;
+}
+.entry-inner::before { top: 24px; left: 16px; border-width: 1px 0 0 1px; }
+.entry-inner::after { bottom: 24px; right: 16px; border-width: 0 1px 1px 0; }
+
+.entry-eyebrow {
+  font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+  color: #475569; margin-bottom: 24px;
+}
+.entry-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: 32px; color: #f1f5f9; line-height: 1.15; margin-bottom: 6px;
+}
+.entry-title em { font-style: italic; color: #94a3b8; }
+.entry-divider { width: 40px; height: 1px; background: #334155; margin: 20px 0; }
+
+.entry-body {
+  font-size: 13px; color: #94a3b8; line-height: 1.7; margin-bottom: 28px; font-weight: 300;
+}
+.entry-body strong { color: #e2e8f0; font-weight: 500; }
+
+.entry-instructions {
+  display: flex; flex-direction: column; gap: 10px;
+  margin-bottom: 32px; padding: 16px 0;
+  border-top: 1px solid #1e293b; border-bottom: 1px solid #1e293b;
+}
+.entry-instruction { display: flex; gap: 12px; align-items: flex-start; font-size: 11px; }
+.instruction-gesture { color: #fbbf24; font-weight: 500; min-width: 130px; flex-shrink: 0; padding-top: 1px; }
+.instruction-desc { color: #64748b; line-height: 1.6; }
+.sub-line { display: block; margin-top: 3px; }
+.sub-label { color: #94a3b8; font-weight: 500; }
+.sub-note { color: #475569; font-style: italic; display: block; margin-top: 4px; }
+
+.entry-footer {
+  font-size: 11px; color: #475569; line-height: 1.6; margin-bottom: 32px; font-style: italic;
+}
+.entry-footer strong { color: #64748b; font-style: normal; }
+
+#enter-btn {
+  display: flex; align-items: center; gap: 10px;
+  background: none; border: 1px solid #334155; color: #94a3b8;
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  letter-spacing: 2px; text-transform: uppercase;
+  padding: 12px 20px; cursor: pointer;
+  transition: all 0.3s ease; border-radius: 2px;
+}
+#enter-btn:hover { border-color: #fbbf24; color: #fbbf24; background: rgba(251,191,36,0.04); }
+#enter-btn .arrow { transition: transform 0.3s ease; }
+#enter-btn:hover .arrow { transform: translateX(4px); }
+
+/* MAIN LAYOUT */
+#app {
+  width: 100vw; height: 100vh;
+  display: flex; flex-direction: column;
+}
+
+/* HEADER */
+#header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; border-bottom: 1px solid #1e293b;
+  flex-shrink: 0; flex-wrap: wrap; gap: 8px;
+  background: #0a0a0f;
+}
+#header-title h1 { font-size: 14px; font-weight: 600; color: #ffffff; letter-spacing: 1px; }
+#header-title p { font-size: 9px; color: #94a3b8; letter-spacing: 2px; text-transform: uppercase; }
+
+.mode-group, .voice-group { display: flex; gap: 4px; align-items: center; }
+.voice-label { font-size: 9px; color: #475569; margin-right: 4px; letter-spacing: 1px; text-transform: uppercase; }
+
+.ctrl-btn {
+  padding: 5px 10px; font-size: 9px; font-family: inherit;
+  cursor: pointer; border-radius: 4px; letter-spacing: 1px;
+  text-transform: uppercase; border: 1px solid #334155;
+  background: transparent; color: #94a3b8; transition: all 0.2s;
+}
+.ctrl-btn:hover { border-color: #64748b; color: #e2e8f0; }
+.ctrl-btn.active-view { background: #2563eb; border-color: #2563eb; color: white; }
+.ctrl-btn.active-degrade { background: #dc2626; border-color: #dc2626; color: white; }
+.ctrl-btn.active-boost { background: #16a34a; border-color: #16a34a; color: white; }
+
+.voice-btn { padding: 5px 10px; font-size: 9px; font-family: inherit; cursor: pointer; border-radius: 4px; letter-spacing: 1px; text-transform: uppercase; border: 1px solid #334155; background: transparent; color: #64748b; transition: all 0.2s; }
+
+#health-display { display: flex; align-items: center; gap: 8px; }
+#health-label { font-size: 9px; color: #475569; letter-spacing: 1px; }
+#health-bar { width: 80px; height: 4px; background: #1e293b; border-radius: 2px; overflow: hidden; }
+#health-fill { height: 100%; background: #22c55e; border-radius: 2px; width: 100%; transition: all 0.5s ease; }
+#health-pct { font-size: 13px; font-weight: 700; color: #22c55e; min-width: 36px; }
+
+/* BODY */
+#body { flex: 1; display: flex; overflow: hidden; }
+
+/* GRAPH */
+#graph-container { flex: 1; position: relative; overflow: hidden; }
+#graph { width: 100%; height: 100%; }
+
+.node-g { cursor: pointer; }
+.node-label { font-family: 'DM Mono', monospace; pointer-events: none; }
+
+#cluster-legend {
+  position: absolute; bottom: 12px; left: 12px;
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.legend-item { display: flex; align-items: center; gap: 4px; font-size: 9px; color: #64748b; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+/* RIGHT PANEL */
+#right-panel {
+  width: 320px; border-left: 1px solid #1e293b;
+  display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;
+}
+
+#node-info {
+  padding: 16px; border-bottom: 1px solid #1e293b;
+  flex-shrink: 0; display: none;
+}
+#node-info.visible { display: block; }
+#node-name-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+#node-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+#node-name { font-size: 14px; font-weight: 700; color: #ffffff; }
+#node-cluster { font-size: 9px; padding: 2px 6px; border-radius: 4px; letter-spacing: 1px; }
+#node-tooltip { font-size: 12px; color: #cbd5e1; font-style: italic; margin-bottom: 8px; line-height: 1.6; }
+#roles-label { font-size: 9px; color: #94a3b8; letter-spacing: 1px; margin-bottom: 6px; text-transform: uppercase; }
+#roles-list { display: flex; flex-wrap: wrap; gap: 4px; }
+.role-tag { font-size: 9px; padding: 2px 6px; border-radius: 3px; }
+.role-normal { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+.role-atrisk { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+
+#scene-panel { flex: 1; overflow-y: auto; padding: 16px; }
+
+#scene-loading { display: none; }
+#scene-loading.visible { display: block; }
+#loading-voice { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+.loading-bar { height: 12px; background: #1e293b; border-radius: 2px; margin-bottom: 6px; animation: pulse 1.5s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:0.4;} 50%{opacity:0.8;} }
+
+#scene-content { display: none; }
+#scene-content.visible { display: block; }
+#scene-voice-row { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+#scene-voice-dot { width: 6px; height: 6px; border-radius: 50%; }
+#scene-voice-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; }
+#scene-node-label { font-size: 9px; color: #334155; margin-left: auto; }
+#scene-text { font-size: 13px; color: #e2e8f0; line-height: 1.8; padding-left: 12px; border-left-width: 2px; border-left-style: solid; }
+
+#how-to { color: #94a3b8; font-size: 12px; line-height: 1.7; }
+#how-to h4 { font-size: 9px; letter-spacing: 2px; color: #64748b; margin-bottom: 12px; text-transform: uppercase; }
+#how-to .how-item { margin-bottom: 8px; }
+#how-to .how-key { color: #cbd5e1; }
+#how-to .voices-list { border-top: 1px solid #1e293b; padding-top: 12px; margin-top: 4px; }
+#how-to .voice-desc { margin-bottom: 8px; font-size: 10px; }
+#how-to .vd-label { font-weight: 500; font-size: 10px; letter-spacing: 1px; }
+#how-to .vd-text { color: #64748b; }
+
+#cascade-log { border-top: 1px solid #1e293b; padding: 10px 16px; max-height: 160px; overflow-y: auto; flex-shrink: 0; display: none; }
+#cascade-log.visible { display: block; }
+#cascade-log-title { font-size: 9px; letter-spacing: 2px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; }
+.log-entry { margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #0f172a; }
+.log-entry:last-child { border-bottom: none; }
+.log-entry-header { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+.log-node { font-size: 11px; font-weight: 600; }
+.log-delta { font-size: 10px; }
+.log-time { font-size: 9px; color: #64748b; margin-left: auto; }
+.log-effects { display: flex; flex-wrap: wrap; gap: 3px; }
+.log-effect { font-size: 9px; padding: 2px 5px; border-radius: 2px; }
+.effect-neg { background: rgba(239,68,68,0.15); color: #fca5a5; }
+.effect-pos { background: rgba(34,197,94,0.15); color: #86efac; }
+</style>
+</head>
+<body>
+
+<!-- ENTRY OVERLAY -->
+<div id="entry-overlay">
+  <div class="entry-inner">
+    <div class="entry-eyebrow">The Human Substrate — Prototype</div>
+    <div class="entry-title">Capacities,<br><em>Carriers,</em><br>Cascades.</div>
+    <div class="entry-divider"></div>
+    <p class="entry-body">
+      This is a map of what AI is actually made of.<br><br>
+      Each node is a human cognitive capacity — nuance, trust, timing, grief language — that AI systems forensically reconstruct at speed but don't account for economically. The lines show how these capacities <strong>depend on, reinforce, and destabilize</strong> each other.
+    </p>
+    <div class="entry-instructions">
+      <div class="entry-instruction">
+        <span class="instruction-gesture">Touch / Click</span>
+        <span class="instruction-desc">See the capacity, its definition, who carries it</span>
+      </div>
+      <div class="entry-instruction">
+        <span class="instruction-gesture">Intervention panel</span>
+        <span class="instruction-desc">
+          <span class="sub-line"><span class="sub-label">View</span> — inspect without changing anything</span>
+          <span class="sub-line"><span class="sub-label">Degrade / Boost</span> — click any node, watch the cascade</span>
+          <span class="sub-line"><span class="sub-label">Reset</span> — restore the system to full health</span>
+          <span class="sub-note">System Health shows the aggregate — degrade Trust and watch it fall</span>
+        </span>
+      </div>
+      <div class="entry-instruction">
+        <span class="instruction-gesture">Voice selector</span>
+        <span class="instruction-desc">Choose how the cascade scene is written — Maddow, Gibson, Dispatch, or Elder</span>
+      </div>
+    </div>
+    <p class="entry-footer">
+      <strong>This is a prototype</strong> — built to start a conversation.<br>
+      The substrate is real. The accounting isn't. Yet.
+    </p>
+    <button id="enter-btn">Enter the model <span class="arrow">→</span></button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div id="header">
+    <div id="header-title">
+      <h1>THE HUMAN SUBSTRATE</h1>
+      <p>Capacities · Carriers · Cascades</p>
+    </div>
+    <div class="mode-group">
+      <button class="ctrl-btn active-view" data-mode="view">View</button>
+      <button class="ctrl-btn" data-mode="degrade">Degrade</button>
+      <button class="ctrl-btn" data-mode="boost">Boost</button>
+      <button class="ctrl-btn" id="reset-btn">Reset</button>
+    </div>
+    <div class="voice-group">
+      <span class="voice-label">Voice</span>
+      <button class="voice-btn active" data-voice="gibson" style="border-color:#a855f7;color:#a855f7;">Gibson</button>
+      <button class="voice-btn" data-voice="maddow">Maddow</button>
+      <button class="voice-btn" data-voice="dispatch">Dispatch</button>
+      <button class="voice-btn" data-voice="elder">Elder</button>
+    </div>
+    <div id="health-display">
+      <span id="health-label">SYSTEM</span>
+      <div id="health-bar"><div id="health-fill"></div></div>
+      <span id="health-pct">100%</span>
+    </div>
+  </div>
+
+  <div id="body">
+    <div id="graph-container">
+      <svg id="graph"></svg>
+      <div id="cluster-legend"></div>
+    </div>
+    <div id="right-panel">
+      <div id="node-info">
+        <div id="node-name-row">
+          <div id="node-dot"></div>
+          <span id="node-name"></span>
+          <span id="node-cluster"></span>
+        </div>
+        <div id="node-tooltip"></div>
+        <div id="roles-label">Carried By</div>
+        <div id="roles-list"></div>
+      </div>
+      <div id="scene-panel">
+        <div id="scene-loading">
+          <div id="loading-voice"></div>
+          <div class="loading-bar" style="width:80%"></div>
+          <div class="loading-bar" style="width:90%;animation-delay:0.2s"></div>
+          <div class="loading-bar" style="width:70%;animation-delay:0.4s"></div>
+        </div>
+        <div id="scene-content">
+          <div id="scene-voice-row">
+            <div id="scene-voice-dot"></div>
+            <span id="scene-voice-label"></span>
+            <span id="scene-node-label"></span>
+          </div>
+          <div id="scene-text"></div>
+        </div>
+        <div id="how-to">
+          <h4>How to use</h4>
+          <div class="how-item"><span class="how-key">Click</span> any node to inspect it</div>
+          <div class="how-item"><span class="how-key">Switch to Degrade or Boost</span> then click — a scene generates in the selected voice</div>
+          <div class="how-item"><span class="how-key">Change voice</span> at any time and re-click</div>
+          <div class="voices-list">
+            <div class="voice-desc"><span class="vd-label" style="color:#a855f7">GIBSON</span> <span class="vd-text">— Noir precision. The future already here, unevenly distributed.</span></div>
+            <div class="voice-desc"><span class="vd-label" style="color:#3b82f6">MADDOW</span> <span class="vd-text">— Investigative. Connective. The thread that holds.</span></div>
+            <div class="voice-desc"><span class="vd-label" style="color:#94a3b8">DISPATCH</span> <span class="vd-text">— Wire report. Flat. Factual. Unsparing.</span></div>
+            <div class="voice-desc"><span class="vd-label" style="color:#f59e0b">ELDER</span> <span class="vd-text">— Long memory. Slow certainty. The land speaking.</span></div>
+          </div>
+        </div>
+      </div>
+      <div id="cascade-log">
+        <div id="cascade-log-title">Cascade Log</div>
+        <div id="log-entries"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================
+// DATA
+// ============================================
+const capacityNodes = [
+  { id:"nuance", label:"Nuance", cluster:"Meaning", health:100, tooltip:"Meaning that rides between words.", degradeOutcome:"Communication becomes blunt, robotic. Subtlety disappears.", boostOutcome:"Interactions feel careful, considered. Trust increases.", roles:[{name:"Editors",atRisk:true},{name:"Diplomats",atRisk:false},{name:"Therapists",atRisk:false},{name:"Translators",atRisk:true}] },
+  { id:"subtext", label:"Subtext", cluster:"Meaning", health:100, tooltip:"What's implied but not spoken.", degradeOutcome:"Everything becomes literal. Persuasion loses power.", boostOutcome:"Communication gains depth. Stories resonate.", roles:[{name:"Screenwriters",atRisk:true},{name:"Negotiators",atRisk:false},{name:"Bartenders",atRisk:false}] },
+  { id:"irony", label:"Irony", cluster:"Meaning", health:100, tooltip:"Saying one thing while meaning another.", degradeOutcome:"Humor flattens. Cultural commentary disappears.", boostOutcome:"Discourse gains sophistication.", roles:[{name:"Comedians",atRisk:false},{name:"Critics",atRisk:true},{name:"Cartoonists",atRisk:true}] },
+  { id:"hedging", label:"Hedging", cluster:"Meaning", health:100, tooltip:"Soft certainty when reality is messy.", degradeOutcome:"Overconfidence everywhere. Liability increases.", boostOutcome:"Statements become trustworthy.", roles:[{name:"Lawyers",atRisk:false},{name:"Scientists",atRisk:false},{name:"Doctors",atRisk:false}] },
+  { id:"framing", label:"Framing", cluster:"Persuasion", health:100, tooltip:"The angle that changes interpretation.", degradeOutcome:"Arguments lose shape. Decisions stall.", boostOutcome:"Messages land. Action follows.", roles:[{name:"Journalists",atRisk:true},{name:"Politicians",atRisk:false},{name:"Marketers",atRisk:false}] },
+  { id:"authority", label:"Authority", cluster:"Persuasion", health:100, tooltip:"Signals that trigger deference.", degradeOutcome:"Leadership signals fail. Expertise ignored.", boostOutcome:"Direction followed. Coordination improves.", roles:[{name:"Executives",atRisk:false},{name:"Professors",atRisk:false},{name:"Judges",atRisk:false}] },
+  { id:"socialproof", label:"Social Proof", cluster:"Persuasion", health:100, tooltip:"'People like you do this.'", degradeOutcome:"Adoption stalls. Communities don't form.", boostOutcome:"Participation increases. Norms spread.", roles:[{name:"Marketers",atRisk:false},{name:"Influencers",atRisk:false},{name:"Neighbors",atRisk:false}] },
+  { id:"trust", label:"Trust", cluster:"Social", health:100, tooltip:"How humans decide 'safe, real, reliable.'", degradeOutcome:"CRITICAL. Adoption stops. Nothing scales.", boostOutcome:"Everything unlocks. Cooperation possible.", roles:[{name:"Teachers",atRisk:true},{name:"Nurses",atRisk:true},{name:"Parents",atRisk:false},{name:"Librarians",atRisk:true}] },
+  { id:"politeness", label:"Politeness", cluster:"Social", health:100, tooltip:"How we ask without demanding.", degradeOutcome:"Friction everywhere. Retention drops.", boostOutcome:"Friction decreases. Requests honored.", roles:[{name:"Hospitality Workers",atRisk:true},{name:"Customer Service",atRisk:true},{name:"Diplomats",atRisk:false}] },
+  { id:"facesaving", label:"Face-Saving", cluster:"Social", health:100, tooltip:"Protecting dignity in conversation.", degradeOutcome:"Conflicts escalate. Relationships rupture.", boostOutcome:"Exit ramps appear. Dignity preserved.", roles:[{name:"HR Professionals",atRisk:false},{name:"Mediators",atRisk:false},{name:"Family Therapists",atRisk:false}] },
+  { id:"belonging", label:"Belonging", cluster:"Culture", health:100, tooltip:"Signals of 'us' and 'them.'", degradeOutcome:"Communities fragment. Loyalty disappears.", boostOutcome:"Groups cohere. Identity anchors.", roles:[{name:"Community Organizers",atRisk:true},{name:"Coaches",atRisk:false},{name:"Union Reps",atRisk:true}] },
+  { id:"humor", label:"Humor", cluster:"Culture", health:100, tooltip:"Bonding via surprise + timing.", degradeOutcome:"Bonding fails. Everything tedious.", boostOutcome:"Connection happens. Messages stick.", roles:[{name:"Comedians",atRisk:false},{name:"Writers",atRisk:true},{name:"DJs",atRisk:false}] },
+  { id:"freshness", label:"Freshness", cluster:"Culture", health:100, tooltip:"Staying aligned with the present.", degradeOutcome:"Everything feels stale.", boostOutcome:"Outputs feel current.", roles:[{name:"Journalists",atRisk:true},{name:"Youth Workers",atRisk:true},{name:"DJs",atRisk:false}] },
+  { id:"idioms", label:"Idioms", cluster:"Culture", health:100, tooltip:"Compressed cultural memory.", degradeOutcome:"Speech feels foreign.", boostOutcome:"Communication feels native.", roles:[{name:"Translators",atRisk:true},{name:"Elders",atRisk:false},{name:"Grandparents",atRisk:false}] },
+  { id:"taboos", label:"Taboos", cluster:"Culture", health:100, tooltip:"What not to say, and how we avoid it.", degradeOutcome:"Social backlash. Boundaries violated.", boostOutcome:"Risk controlled. Limits maintained.", roles:[{name:"Editors",atRisk:true},{name:"PR Professionals",atRisk:false},{name:"Elders",atRisk:false}] },
+  { id:"empathy", label:"Empathy", cluster:"Emotion", health:100, tooltip:"Recognizing and responding to feelings.", degradeOutcome:"Help becomes hollow.", boostOutcome:"Interactions heal. People feel seen.", roles:[{name:"Therapists",atRisk:false},{name:"Nurses",atRisk:true},{name:"Caregivers",atRisk:true}] },
+  { id:"grief", label:"Grief Language", cluster:"Emotion", health:100, tooltip:"How humans speak loss.", degradeOutcome:"Loss handled badly.", boostOutcome:"Hardest moments met with grace.", roles:[{name:"Hospice Workers",atRisk:true},{name:"Chaplains",atRisk:false},{name:"Neighbors",atRisk:false}] },
+  { id:"hope", label:"Hope", cluster:"Emotion", health:100, tooltip:"Future-making in words.", degradeOutcome:"Motivation dies. Futures stop.", boostOutcome:"Action resumes. Possibility returns.", roles:[{name:"Coaches",atRisk:false},{name:"Teachers",atRisk:true},{name:"Parents",atRisk:false}] },
+  { id:"angercontrol", label:"De-escalation", cluster:"Emotion", health:100, tooltip:"Reducing heat without surrender.", degradeOutcome:"Conflicts spiral. Polarization accelerates.", boostOutcome:"Heat reduces. Solutions appear.", roles:[{name:"Moderators",atRisk:true},{name:"ER Nurses",atRisk:true},{name:"Teachers",atRisk:true}] },
+  { id:"taste", label:"Taste", cluster:"Judgment", health:100, tooltip:"Aesthetic judgment without rules.", degradeOutcome:"Quality undetectable. Mediocrity.", boostOutcome:"Quality emerges. Rightness achieved.", roles:[{name:"Curators",atRisk:true},{name:"Editors",atRisk:true},{name:"Designers",atRisk:false}] },
+  { id:"clarity", label:"Clarity", cluster:"Judgment", health:100, tooltip:"Making meaning easy to grasp.", degradeOutcome:"Comprehension fails. Noise.", boostOutcome:"Understanding improves.", roles:[{name:"Technical Writers",atRisk:true},{name:"Teachers",atRisk:true},{name:"UX Writers",atRisk:false}] },
+  { id:"timing", label:"Timing", cluster:"Judgment", health:100, tooltip:"When to land the point.", degradeOutcome:"Impact lost. Points land wrong.", boostOutcome:"Impact maximized.", roles:[{name:"Comedians",atRisk:false},{name:"Directors",atRisk:false},{name:"DJs",atRisk:false}] },
+  { id:"commonSense", label:"Common Sense", cluster:"Cognition", health:100, tooltip:"Unspoken defaults about the world.", degradeOutcome:"Outputs feel alien. Weird AI.", boostOutcome:"Outputs feel grounded.", roles:[{name:"Parents",atRisk:false},{name:"Teachers",atRisk:true},{name:"Farmers",atRisk:true}] },
+  { id:"analogy", label:"Analogy", cluster:"Cognition", health:100, tooltip:"Mapping one domain onto another.", degradeOutcome:"Hard things stay hard.", boostOutcome:"Complex becomes clear.", roles:[{name:"Teachers",atRisk:true},{name:"Coaches",atRisk:false},{name:"Writers",atRisk:true}] },
+  { id:"synthesis", label:"Synthesis", cluster:"Cognition", health:100, tooltip:"Combining fragments into a whole.", degradeOutcome:"Insight dies. Just fragments.", boostOutcome:"Patterns revealed.", roles:[{name:"Researchers",atRisk:false},{name:"Journalists",atRisk:true},{name:"Consultants",atRisk:false}] },
+];
+
+const capacityLinks = [
+  {source:"nuance",target:"hedging",type:"composed-of",weight:0.7},
+  {source:"nuance",target:"politeness",type:"reinforces",weight:0.5},
+  {source:"nuance",target:"trust",type:"reinforces",weight:0.6},
+  {source:"subtext",target:"irony",type:"co-occurs",weight:0.5},
+  {source:"subtext",target:"framing",type:"enables",weight:0.6},
+  {source:"authority",target:"trust",type:"tensions",weight:-0.3},
+  {source:"socialproof",target:"belonging",type:"reinforces",weight:0.6},
+  {source:"framing",target:"socialproof",type:"reinforces",weight:0.5},
+  {source:"politeness",target:"facesaving",type:"reinforces",weight:0.6},
+  {source:"empathy",target:"trust",type:"reinforces",weight:0.7},
+  {source:"empathy",target:"grief",type:"enables",weight:0.8},
+  {source:"humor",target:"timing",type:"requires",weight:0.8},
+  {source:"humor",target:"belonging",type:"reinforces",weight:0.5},
+  {source:"idioms",target:"commonSense",type:"reinforces",weight:0.4},
+  {source:"taboos",target:"facesaving",type:"drives",weight:0.5},
+  {source:"freshness",target:"humor",type:"feeds",weight:0.6},
+  {source:"taste",target:"clarity",type:"balances",weight:0.4},
+  {source:"clarity",target:"trust",type:"reinforces",weight:0.6},
+  {source:"timing",target:"framing",type:"reinforces",weight:0.5},
+  {source:"analogy",target:"synthesis",type:"reinforces",weight:0.5},
+  {source:"commonSense",target:"trust",type:"supports",weight:0.5},
+  {source:"synthesis",target:"clarity",type:"enables",weight:0.6},
+  {source:"trust",target:"belonging",type:"reinforces",weight:0.5},
+  {source:"trust",target:"hope",type:"enables",weight:0.6},
+  {source:"empathy",target:"angercontrol",type:"reinforces",weight:0.5},
+  {source:"taste",target:"nuance",type:"reinforces",weight:0.5},
+  {source:"hope",target:"empathy",type:"reinforces",weight:0.4},
+];
+
+const clusterColors = {
+  Meaning:"#6366f1", Persuasion:"#f59e0b", Social:"#10b981",
+  Culture:"#ec4899", Emotion:"#ef4444", Judgment:"#8b5cf6", Cognition:"#06b6d4"
+};
+
+const clusterPos = {
+  Meaning:{x:0.15,y:0.25}, Persuasion:{x:0.5,y:0.1}, Social:{x:0.85,y:0.25},
+  Culture:{x:0.12,y:0.7}, Emotion:{x:0.5,y:0.82}, Judgment:{x:0.88,y:0.7}, Cognition:{x:0.5,y:0.45}
+};
+
+const VOICES = {
+  maddow:{label:"Maddow",color:"#3b82f6"},
+  gibson:{label:"Gibson",color:"#a855f7"},
+  dispatch:{label:"Dispatch",color:"#94a3b8"},
+  elder:{label:"Elder",color:"#f59e0b"}
+};
+
+const VOICE_PROMPTS = {
+  maddow:`You are writing in the style of Rachel Maddow — investigative, connective, building a case through accumulated detail. You find the human story inside the systemic failure. Write 3-4 sentences describing what it looks and feels like in the real world when the human cognitive capacity called "{node}" degrades or gets boosted in an AI-dependent society. Make it specific — name a person, a place, a moment. Connect it to the larger pattern. The cascade affected: {cascade}. Mode: {mode}. Current health: {health}%.`,
+  gibson:`You are writing in the style of William Gibson — noir, precise, future-present tense. The technology is ambient, the human cost is specific. Write 3-4 sentences describing what it looks and feels like when the substrate capacity called "{node}" shifts in a world where AI is infrastructure. The cascade affected: {cascade}. Mode: {mode}. Current health: {health}%. Make it feel inevitable and slightly wrong.`,
+  dispatch:`You are a wire service reporter. Flat affect. No metaphor. Just what happened, to whom, and what it cost. Write 3-4 sentences as a dispatch describing the real-world impact when the substrate capacity "{node}" degrades or improves across AI systems. The cascade affected: {cascade}. Mode: {mode}. Current health: {health}%. Lead with the fact. End with the implication.`,
+  elder:`You are speaking from deep time — an elder who has watched extraction patterns repeat across generations. Your language is slow, certain, without anger. Write 3-4 sentences about what it means when the capacity called "{node}" — the human ability to {tooltip} — is diminished or strengthened in a world that has learned to bottle and sell it. The cascade affected: {cascade}. Mode: {mode}. Current health: {health}%. Speak of what is lost when the knowledge is taken without return.`
+};
+
+// ============================================
+// STATE
+// ============================================
+let mode = 'view';
+let voice = 'gibson';
+let selectedNode = null;
+let nodes = [];
+let animId = null;
+
+function getHealthColor(h) {
+  return h >= 80 ? '#22c55e' : h >= 50 ? '#fbbf24' : h >= 25 ? '#f97316' : '#ef4444';
+}
+
+function calculateCascade(src, delta) {
+  const effects = [], visited = new Set([src.id]);
+  function prop(nid, d, depth) {
+    if (depth > 3) return;
+    capacityLinks.forEach(l => {
+      let tid = null, w = Math.abs(l.weight);
+      if (l.source === nid) tid = l.target;
+      else if (l.target === nid) tid = l.source;
+      if (!tid || visited.has(tid)) return;
+      let ed = l.type === 'tensions' ? -d*w*0.4 :
+               (l.type === 'enables'||l.type === 'requires') ? d*w*0.6 :
+               (l.type === 'reinforces'||l.type === 'supports') ? d*w*0.5 : d*w*0.3;
+      ed *= (1 - depth * 0.25);
+      if (Math.abs(ed) >= 3) {
+        visited.add(tid);
+        effects.push({id:tid, delta:Math.round(ed), depth:depth+1, from:nid});
+        prop(tid, ed, depth+1);
+      }
+    });
+  }
+  prop(src.id, delta, 0);
+  return effects;
+}
+
+// ============================================
+// SVG RENDERING
+// ============================================
+const svg = document.getElementById('graph');
+const NS = 'http://www.w3.org/2000/svg';
+
+function svgEl(tag, attrs) {
+  const el = document.createElementNS(NS, tag);
+  Object.entries(attrs||{}).forEach(([k,v]) => el.setAttribute(k,v));
+  return el;
+}
+
+let linkEls = {}, nodeEls = {}, ringEls = {}, textEls = {}, healthEls = {};
+
+function initGraph() {
+  const w = svg.parentElement.clientWidth;
+  const h = svg.parentElement.clientHeight;
+  svg.setAttribute('width', w);
+  svg.setAttribute('height', h);
+
+  nodes = capacityNodes.map(n => {
+    const p = clusterPos[n.cluster];
+    return {
+      ...n,
+      x: p.x * w + (Math.random()-0.5)*60,
+      y: p.y * h + (Math.random()-0.5)*60,
+      vx: 0, vy: 0
+    };
+  });
+
+  // Links
+  const linkGroup = svgEl('g');
+  svg.appendChild(linkGroup);
+  capacityLinks.forEach(l => {
+    const line = svgEl('line', {
+      stroke: l.type==='tensions' ? '#ef4444aa' : '#64748baa',
+      'stroke-width': 2,
+      'stroke-dasharray': l.type==='tensions' ? '4,4' : 'none'
+    });
+    linkEls[l.source+'_'+l.target] = line;
+    linkGroup.appendChild(line);
+  });
+
+  // Nodes
+  const nodeGroup = svgEl('g');
+  svg.appendChild(nodeGroup);
+  nodes.forEach(n => {
+    const g = svgEl('g', {class:'node-g', cursor:'pointer'});
+    const circ = 2 * Math.PI * 20;
+
+    // Ring bg
+    g.appendChild(svgEl('circle', {r:20, fill:'none', stroke:'#1e293b', 'stroke-width':3}));
+
+    // Health ring
+    const ring = svgEl('circle', {
+      r:20, fill:'none', stroke:'#22c55e',
+      'stroke-width':3,
+      'stroke-dasharray':`${circ} ${circ}`,
+      'stroke-dashoffset':0,
+      transform:'rotate(-90)',
+      style:'transition:stroke-dashoffset 0.5s ease,stroke 0.5s ease'
+    });
+    ringEls[n.id] = ring;
+    g.appendChild(ring);
+
+    // Main circle
+    g.appendChild(svgEl('circle', {
+      r:15, fill:clusterColors[n.cluster],
+      stroke:'none', style:'transition:all 0.3s ease'
+    }));
+
+    // Health text
+    const ht = svgEl('text', {
+      'text-anchor':'middle', dy:3, 'font-size':9,
+      fill:'#f1f5f9', 'font-family':'DM Mono,monospace', 'font-weight':700,
+      style:'pointer-events:none'
+    });
+    ht.textContent = '100';
+    healthEls[n.id] = ht;
+    g.appendChild(ht);
+
+    // Label
+    const lt = svgEl('text', {
+      'text-anchor':'middle', dy:33, 'font-size':10,
+      fill:'#e2e8f0', 'font-family':'DM Mono,monospace', 'font-weight':500,
+      style:'pointer-events:none'
+    });
+    lt.textContent = n.label;
+    textEls[n.id] = lt;
+    g.appendChild(lt);
+
+    g.addEventListener('click', () => handleNodeClick(n.id));
+    nodeEls[n.id] = g;
+    nodeGroup.appendChild(g);
+  });
+
+  // Legend
+  const legend = document.getElementById('cluster-legend');
+  Object.entries(clusterColors).forEach(([cluster, color]) => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `<div class="legend-dot" style="background:${color}"></div>${cluster}`;
+    legend.appendChild(item);
+  });
+
+  startSimulation();
+}
+
+function startSimulation() {
+  if (animId) cancelAnimationFrame(animId);
+  function tick() {
+    const w = svg.parentElement.clientWidth;
+    const h = svg.parentElement.clientHeight;
+
+    nodes.forEach(n => {
+      const p = clusterPos[n.cluster];
+      n.vx = (n.vx + (p.x*w - n.x) * 0.008) * 0.85;
+      n.vy = (n.vy + (p.y*h - n.y) * 0.008) * 0.85;
+    });
+
+    for (let i=0; i<nodes.length; i++) {
+      for (let j=i+1; j<nodes.length; j++) {
+        const dx = nodes[j].x-nodes[i].x, dy = nodes[j].y-nodes[i].y;
+        const dist = Math.sqrt(dx*dx+dy*dy)||1;
+        if (dist < 70) {
+          const f = (70-dist)/dist*0.3;
+          nodes[i].vx -= dx*f; nodes[i].vy -= dy*f;
+          nodes[j].vx += dx*f; nodes[j].vy += dy*f;
+        }
+      }
+    }
+
+    capacityLinks.forEach(l => {
+      const a = nodes.find(n=>n.id===l.source), b = nodes.find(n=>n.id===l.target);
+      if (!a||!b) return;
+      const dx=b.x-a.x, dy=b.y-a.y, dist=Math.sqrt(dx*dx+dy*dy)||1;
+      const f=(dist-90)/dist*0.05;
+      a.vx+=dx*f; a.vy+=dy*f; b.vx-=dx*f; b.vy-=dy*f;
+    });
+
+    nodes.forEach(n => {
+      n.x = Math.max(30, Math.min(w-30, n.x+n.vx));
+      n.y = Math.max(30, Math.min(h-30, n.y+n.vy));
+      nodeEls[n.id].setAttribute('transform', `translate(${n.x},${n.y})`);
+    });
+
+    capacityLinks.forEach(l => {
+      const a = nodes.find(n=>n.id===l.source), b = nodes.find(n=>n.id===l.target);
+      if (!a||!b) return;
+      const el = linkEls[l.source+'_'+l.target];
+      if (el) { el.setAttribute('x1',a.x); el.setAttribute('y1',a.y); el.setAttribute('x2',b.x); el.setAttribute('y2',b.y); }
+    });
+
+    animId = requestAnimationFrame(tick);
+  }
+  animId = requestAnimationFrame(tick);
+}
+
+function updateVisuals() {
+  const circ = 2 * Math.PI * 20;
+  nodes.forEach(n => {
+    const h = n.health;
+    const color = getHealthColor(h);
+    const offset = circ * (1 - h/100);
+    if (ringEls[n.id]) {
+      ringEls[n.id].setAttribute('stroke', color);
+      ringEls[n.id].setAttribute('stroke-dashoffset', offset);
+    }
+    if (healthEls[n.id]) healthEls[n.id].textContent = Math.round(h);
+    if (selectedNode && n.id === selectedNode.id) {
+      const main = nodeEls[n.id].querySelector('circle:nth-child(3)');
+      if (main) { main.setAttribute('stroke','#fbbf24'); main.setAttribute('stroke-width',3); }
+    }
+  });
+  const avg = nodes.reduce((s,n)=>s+n.health,0)/nodes.length;
+  const c = getHealthColor(avg);
+  document.getElementById('health-fill').style.width = avg+'%';
+  document.getElementById('health-fill').style.background = c;
+  document.getElementById('health-pct').textContent = Math.round(avg)+'%';
+  document.getElementById('health-pct').style.color = c;
+}
+
+// ============================================
+// INTERACTIONS
+// ============================================
+function handleNodeClick(nodeId) {
+  const node = nodes.find(n=>n.id===nodeId);
+  if (!node) return;
+
+  // Clear previous selection ring
+  nodes.forEach(n => {
+    const main = nodeEls[n.id]?.querySelector('circle:nth-child(3)');
+    if (main) { main.setAttribute('stroke','none'); }
+  });
+
+  selectedNode = node;
+  showNodeInfo(node);
+
+  if (mode === 'view') return;
+
+  const delta = mode === 'degrade' ? -25 : 25;
+  const cascade = calculateCascade(node, delta);
+
+  node.health = Math.max(0, Math.min(100, node.health + delta));
+  cascade.forEach(e => {
+    const n = nodes.find(x=>x.id===e.id);
+    if (n) n.health = Math.max(0, Math.min(100, n.health + e.delta));
+  });
+  updateVisuals();
+  addLogEntry(node, cascade, mode, delta);
+  generateScene(node, cascade, mode, delta);
+}
+
+function showNodeInfo(node) {
+  const info = document.getElementById('node-info');
+  info.classList.add('visible');
+  document.getElementById('node-dot').style.background = clusterColors[node.cluster];
+  document.getElementById('node-name').textContent = node.label;
+  const badge = document.getElementById('node-cluster');
+  badge.textContent = node.cluster.toUpperCase();
+  badge.style.background = clusterColors[node.cluster]+'40';
+  badge.style.color = clusterColors[node.cluster];
+  document.getElementById('node-tooltip').textContent = node.tooltip;
+  const rolesList = document.getElementById('roles-list');
+  rolesList.innerHTML = '';
+  node.roles.forEach(r => {
+    const s = document.createElement('span');
+    s.className = 'role-tag ' + (r.atRisk ? 'role-atrisk' : 'role-normal');
+    s.textContent = r.name;
+    rolesList.appendChild(s);
+  });
+  document.getElementById('how-to').style.display = 'none';
+}
+
+async function generateScene(node, cascade, actionMode, delta) {
+  document.getElementById('scene-content').classList.remove('visible');
+  document.getElementById('scene-loading').classList.add('visible');
+  document.getElementById('loading-voice').style.color = VOICES[voice].color;
+  document.getElementById('loading-voice').textContent = VOICES[voice].label + ' · Generating scene...';
+
+  const cascadeNames = cascade.slice(0,5).map(e => {
+    const n = capacityNodes.find(x=>x.id===e.id);
+    return `${n?.label} (${e.delta>0?'+':''}${e.delta}%)`;
+  }).join(', ');
+
+  const prompt = VOICE_PROMPTS[voice]
+    .replace('{node}', node.label)
+    .replace('{tooltip}', node.tooltip)
+    .replace('{cascade}', cascadeNames || 'minimal cascade')
+    .replace('{mode}', actionMode)
+    .replace('{health}', Math.max(0, Math.min(100, node.health)));
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:'You are a writer. Respond only with the scene — no preamble, no explanation, no quotation marks. Just the prose.',
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.find(b=>b.type==='text')?.text || 'Scene unavailable.';
+
+    document.getElementById('scene-loading').classList.remove('visible');
+    document.getElementById('scene-content').classList.add('visible');
+    document.getElementById('scene-voice-dot').style.background = VOICES[voice].color;
+    document.getElementById('scene-voice-label').style.color = VOICES[voice].color;
+    document.getElementById('scene-voice-label').textContent = VOICES[voice].label;
+    document.getElementById('scene-node-label').textContent = node.label + ' · ' + actionMode;
+    document.getElementById('scene-text').style.borderLeftColor = VOICES[voice].color+'60';
+    document.getElementById('scene-text').textContent = text;
+  } catch(e) {
+    document.getElementById('scene-loading').classList.remove('visible');
+    document.getElementById('scene-content').classList.add('visible');
+    document.getElementById('scene-text').textContent = 'Scene generation unavailable.';
+  }
+}
+
+function addLogEntry(node, cascade, actionMode, delta) {
+  const log = document.getElementById('cascade-log');
+  log.classList.add('visible');
+  const entries = document.getElementById('log-entries');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  const isNeg = actionMode === 'degrade';
+  const effects = cascade.slice(0,4).map(e => {
+    const n = capacityNodes.find(x=>x.id===e.id);
+    return `<span class="log-effect ${e.delta>0?'effect-pos':'effect-neg'}">${n?.label} ${e.delta>0?'+':''}${e.delta}%</span>`;
+  }).join('');
+  entry.innerHTML = `
+    <div class="log-entry-header">
+      <span class="log-node" style="color:${isNeg?'#f87171':'#4ade80'}">${node.label}</span>
+      <span class="log-delta" style="color:${isNeg?'#ef4444':'#22c55e'}">${delta>0?'+':''}${delta}%</span>
+      <span class="log-time">${new Date().toLocaleTimeString()}</span>
+    </div>
+    <div class="log-effects">${effects||'<span style="color:#475569;font-size:9px">No cascade</span>'}</div>
+  `;
+  entries.insertBefore(entry, entries.firstChild);
+  while (entries.children.length > 8) entries.removeChild(entries.lastChild);
+}
+
+// ============================================
+// CONTROLS
+// ============================================
+document.getElementById('enter-btn').addEventListener('click', () => {
+  const ov = document.getElementById('entry-overlay');
+  ov.classList.add('dissolving');
+  setTimeout(() => ov.style.display='none', 800);
+});
+
+document.querySelectorAll('[data-mode]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    mode = btn.dataset.mode;
+    document.querySelectorAll('[data-mode]').forEach(b => {
+      b.className = 'ctrl-btn';
+      if (b.dataset.mode && b.dataset.mode !== 'reset') {
+        // will be set below
+      }
+    });
+    document.querySelectorAll('.ctrl-btn[data-mode]').forEach(b => {
+      if (b.dataset.mode === mode) b.classList.add('active-'+mode);
+    });
+  });
+});
+
+document.getElementById('reset-btn').addEventListener('click', () => {
+  nodes.forEach(n => n.health = 100);
+  selectedNode = null;
+  updateVisuals();
+  document.getElementById('node-info').classList.remove('visible');
+  document.getElementById('scene-content').classList.remove('visible');
+  document.getElementById('cascade-log').classList.remove('visible');
+  document.getElementById('log-entries').innerHTML = '';
+  document.getElementById('how-to').style.display = '';
+  nodes.forEach(n => {
+    const main = nodeEls[n.id]?.querySelector('circle:nth-child(3)');
+    if (main) main.setAttribute('stroke','none');
+  });
+});
+
+document.querySelectorAll('[data-voice]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    voice = btn.dataset.voice;
+    document.querySelectorAll('[data-voice]').forEach(b => {
+      b.classList.remove('active');
+      b.style.borderColor = '#334155';
+      b.style.color = '#64748b';
+    });
+    btn.classList.add('active');
+    btn.style.borderColor = VOICES[voice].color;
+    btn.style.color = VOICES[voice].color;
+  });
+});
+
+window.addEventListener('resize', () => {
+  const w = svg.parentElement.clientWidth;
+  const h = svg.parentElement.clientHeight;
+  svg.setAttribute('width', w);
+  svg.setAttribute('height', h);
+});
+
+// ============================================
+// INIT
+// ============================================
+window.addEventListener('load', initGraph);
+</script>
+</body>
+</html>
