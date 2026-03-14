@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Human Substrate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #050504;
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+  }
+
+  #c {
+    position: fixed; inset: 0;
+    width: 100vw; height: 100vh;
+    display: block;
+  }
+
+  /* ── MARK ── */
+  #mark {
+    position: fixed;
+    top: 36px; left: 48px;
+    opacity: 0;
+    animation: fadeUp 1s ease 1s forwards;
+  }
+  .mark-top {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 5px;
+    color: rgba(130,124,112,0.65);
+    text-transform: uppercase;
+  }
+  .mark-sub {
+    font-size: 10px;
+    font-weight: 300;
+    letter-spacing: 2px;
+    color: rgba(100,95,85,0.4);
+    margin-top: 5px;
+  }
+
+  /* ── YEAR ── */
+  #year {
+    position: fixed;
+    bottom: 48px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 8px;
+    color: rgba(210,185,120,0.75);
+    text-transform: uppercase;
+    opacity: 0;
+    animation: fadeUp 1s ease 1.2s forwards;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  /* ── CONTROLS ── */
+  #controls {
+    position: fixed;
+    bottom: 36px; left: 48px;
+    display: flex; gap: 10px;
+    opacity: 0;
+    animation: fadeUp 1s ease 2s forwards;
+  }
+  .btn {
+    background: none;
+    border: 1px solid rgba(55,52,44,0.6);
+    color: rgba(85,82,74,0.65);
+    font-family: 'Inter', sans-serif;
+    font-size: 8px; font-weight: 500;
+    letter-spacing: 3px; padding: 7px 12px;
+    cursor: pointer; text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  .btn:hover {
+    border-color: rgba(200,150,60,0.4);
+    color: rgba(200,150,60,0.8);
+  }
+  .btn.active {
+    border-color: rgba(200,150,60,0.65);
+    color: rgba(200,150,60,0.95);
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Responsive — iPad and mobile ── */
+  @media (max-width: 900px) {
+    body { overflow-y: auto; }
+
+    #mark {
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+    }
+
+    #year {
+      top: auto;
+      bottom: auto;
+    }
+
+    #controls {
+      position: relative;
+      margin: 0 auto 24px auto;
+      text-align: center;
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    canvas#c {
+      width: 100vw !important;
+      height: 100vw !important;
+      max-height: 520px;
+      display: block;
+      flex-shrink: 0;
+    }
+  }
+
+  
+  }
+
+
+  
+  /* ── TIMELINE SCRUBBER ── */
+  #timeline {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    pointer-events: all;
+    z-index: 100;
+  }
+  #timeline-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 320px;
+    height: 1px;
+    background: rgba(180,160,100,0.22);
+    outline: none;
+    cursor: pointer;
+  }
+  #timeline-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(210,185,120,0.75);
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  #timeline-slider::-webkit-slider-thumb:hover {
+    background: rgba(210,185,120,1);
+  }
+  #tl-label {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 4px;
+    color: rgba(210,185,120,0.5);
+    text-transform: uppercase;
+    white-space: nowrap;
+    min-width: 72px;
+    text-align: left;
+  }
+  #tl-left {
+    font-size: 8px;
+    letter-spacing: 3px;
+    color: rgba(150,140,120,0.35);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  #tl-right {
+    font-size: 8px;
+    letter-spacing: 3px;
+    color: rgba(150,140,120,0.35);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  #still-btn {
+    font-size: 8px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    color: rgba(180,160,100,0.45);
+    text-transform: uppercase;
+    background: none;
+    border: 1px solid rgba(180,160,100,0.18);
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  #still-btn:hover {
+    color: rgba(210,185,120,0.8);
+    border-color: rgba(210,185,120,0.35);
+  }
+  @media (max-width: 900px) {
+    #timeline { bottom: 16px; }
+    #timeline-slider { width: 200px; }
+    #dividend-indicator { display: none; }
+    #tl-label { display: none; }
+    #still-btn { display: none; }
+  }
+
+  #dividend-indicator {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 8px;
+    font-weight: 500;
+    letter-spacing: 5px;
+    color: rgba(130,185,220,0);
+    text-transform: uppercase;
+    text-align: center;
+    pointer-events: none;
+    transition: color 2s ease;
+    white-space: nowrap;
+  }
+  #dividend-indicator.active {
+    color: rgba(130,185,220,0.55);
+  }
+
+  /* ── RAMS PLACARD ── */
+  #rams {
+    position: fixed;
+    left: 48px;
+    bottom: 48px;
+    width: 280px;
+    pointer-events: none;
+    opacity: 0;
+    animation: fadeUp 1s ease 2s forwards;
+  }
+  .rams-title {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 5px;
+    color: rgba(210,185,120,0.6);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .rams-line {
+    font-size: 9px;
+    font-weight: 300;
+    letter-spacing: 1.5px;
+    line-height: 2.0;
+    color: rgba(155,148,130,0.45);
+    text-transform: uppercase;
+  }
+  @media (max-width: 900px) {
+    #rams { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app"><canvas id="c"></canvas>
+
+<div id="mark">
+  <div class="mark-top">Human Substrate Project · THS</div>
+  <div class="mark-sub">An open letter · 2026</div>
+</div>
+
+
+
+</div>
+
+
+<div id="rams">
+  <div class="rams-title">The Economic Torus</div>
+  <div class="rams-line">A model of how extractive AI systems<br>must eventually close their economic loop.</div>
+  <div class="rams-line" style="margin-top:8px;opacity:0.6;">If this structure is correct,<br>the loop cannot remain open.</div>
+</div>
+
+<div id="year">Year 0</div>
+<div id="dividend-indicator"></div>
+
+
+
+<div id="timeline">
+  <span id="tl-left">2015</span>
+  <input type="range" id="timeline-slider" min="0" max="200" value="0" step="1">
+  <span id="tl-right">2044</span>
+  <span id="tl-label">Year 0</span>
+  <button id="still-btn">Still</button>
+</div>
+
+<div id="controls">
+  <button class="btn" id="bp">Pause</button>
+  <button class="btn" id="bs">Slow</button>
+  <button class="btn active" id="bn">Normal</button>
+  <button class="btn" id="bf">Fast</button>
+  <button class="btn" id="br">Reset</button>
+  <button class="btn" id="bm">Sound On</button>
+</div>
+
+<script>
+// State — declared early so draw loop can reference them
+
+// Global state — declared before draw loop
+let scrubbing = false;
+let frozenYear = null;
+
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+const yearEl = document.getElementById('year');
+
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  c.width = Math.floor(window.innerWidth * dpr);
+  c.height = Math.floor(window.innerHeight * dpr);
+  c.style.width = window.innerWidth + 'px';
+  c.style.height = window.innerHeight + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+resize();
+window.addEventListener('resize', resize);
+
+function project(x, y, z, cx, cy, rX, rY, scale) {
+  const cosY = Math.cos(rY), sinY = Math.sin(rY);
+  const cosX = Math.cos(rX), sinX = Math.sin(rX);
+  const x1 = x * cosY + z * sinY;
+  const z1 = -x * sinY + z * cosY;
+  const y1 = y * cosX - z1 * sinX;
+  const z2 = y * sinX + z1 * cosX;
+  const fov = 6;
+  const s = fov / (fov + z2 * 0.3);
+  return [cx + x1 * scale * s, cy + y1 * scale * s, z2, s];
+}
+
+const R = 1.0, r = 0.36;
+const SPIRAL_TOTAL = 1800, SP = 3, SQ = 7;
+const spiralPts = [];
+// Spiral density gradient: winding accelerates as extraction compounds,
+// stabilizes as Dividend closes the loop.
+for (let i = 0; i < SPIRAL_TOTAL; i++) {
+  const frac = i / SPIRAL_TOTAL;
+  // Compound curve: tightens through open loop, eases at Dividend
+  const accel = frac < 0.5
+    ? frac * frac * 4
+    : 1 - (frac - 0.5) * (frac - 0.5) * 2;
+  const tBase = frac * Math.PI * 2 * SQ;
+  const tWarped = tBase * (1 + accel * 0.38);
+  spiralPts.push([
+    (R + r * Math.cos(tWarped * SP / SQ)) * Math.cos(tWarped),
+    r * Math.sin(tWarped * SP / SQ),
+    (R + r * Math.cos(tWarped * SP / SQ)) * Math.sin(tWarped)
+  ]);
+}
+
+const TU = 48, TV = 24;
+const rings = [];
+for (let i = 0; i <= TU; i++) {
+  const u = (i / TU) * Math.PI * 2;
+  const ring = [];
+  for (let j = 0; j <= TV; j++) {
+    const v = (j / TV) * Math.PI * 2;
+    ring.push([
+      (R + r * Math.cos(v)) * Math.cos(u),
+      r * Math.sin(v),
+      (R + r * Math.cos(v)) * Math.sin(u)
+    ]);
+  }
+  rings.push(ring);
+}
+
+const PCOUNT = 600;
+let spiralProgress = 0;
+const parts = [];
+function resetP(p, shifted) {
+  const isE = Math.random() > 0.5;
+  const isI = shifted && Math.random() < 0.13;
+  p.u = Math.random() * Math.PI * 2;
+  // Migrate toward inner bore (v=π) as spiralProgress grows
+  const bias = spiralProgress * spiralProgress;
+  const spread = Math.PI * (0.55 - spiralProgress * 0.38);
+  const goInner = Math.random() < bias;
+  let baseV;
+  if (goInner) { baseV = Math.PI + (Math.random()-0.5)*spread; }
+  else { baseV = isE ? Math.random()*Math.PI : Math.PI+Math.random()*Math.PI; }
+  p.v = baseV;
+  p.life = 0;
+  p.maxLife = 0.5 + Math.random() * 1.0;
+  p.speed = 0.012 + Math.random() * 0.008;
+  p.type = isI ? 'inflow' : isE ? 'extract' : 'return';
+}
+for (let i = 0; i < PCOUNT; i++) {
+  const p = {};
+  resetP(p, false);
+  p.life = Math.random() * p.maxLife;
+  parts.push(p);
+}
+
+let rotY = 0.5, rotX = 0.22;
+let time = 0, speed = 1.0;
+let paused = false, shifted = false, ringAlpha = 0;
+let dividendProgress = 0;
+let cloudTime = 0; // independent time for bore cloud — does not track rotation
+let dragging = false, lastX = 0, lastY = 0;
+
+const btns = {
+  pause: document.getElementById('bp'),
+  slow: document.getElementById('bs'),
+  normal: document.getElementById('bn'),
+  fast: document.getElementById('bf'),
+  reset: document.getElementById('br')
+};
+
+function clearSpeed() {
+  ['slow','normal','fast'].forEach(k => btns[k].classList.remove('active'));
+}
+
+btns.pause.addEventListener('click', function() {
+  paused = !paused;
+  if (!paused) { scrubbing = false; lastT = performance.now(); } // clear scrub lock on resume
+  this.classList.toggle('active', paused);
+  this.textContent = paused ? 'Resume' : 'Pause';
+});
+btns.slow.addEventListener('click', function() { speed = 0.25; clearSpeed(); this.classList.add('active'); });
+btns.normal.addEventListener('click', function() { speed = 1.0; clearSpeed(); this.classList.add('active'); });
+btns.fast.addEventListener('click', function() { speed = 4.0; clearSpeed(); this.classList.add('active'); });
+btns.reset.addEventListener('click', () => {
+  spiralProgress = 0; time = 0; shifted = false; ringAlpha = 0;
+  yearEl.textContent = 'Year 0';
+  parts.forEach(p => resetP(p, false));
+});
+
+c.addEventListener('mousedown', e => { dragging = true; lastX = e.clientX; lastY = e.clientY; });
+window.addEventListener('mouseup', () => dragging = false);
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  rotY += (e.clientX - lastX) * 0.006;
+  rotX += (e.clientY - lastY) * 0.004;
+  rotX = Math.max(-0.7, Math.min(0.7, rotX));
+  lastX = e.clientX; lastY = e.clientY;
+});
+
+// Touch support for iPad and mobile
+c.addEventListener('touchstart', e => {
+  e.preventDefault();
+  dragging = true;
+  lastX = e.touches[0].clientX;
+  lastY = e.touches[0].clientY;
+}, { passive: false });
+window.addEventListener('touchend', () => dragging = false);
+window.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (!dragging) return;
+  const tx = e.touches[0].clientX;
+  const ty = e.touches[0].clientY;
+  rotY += (tx - lastX) * 0.006;
+  rotX += (ty - lastY) * 0.004;
+  rotX = Math.max(-0.7, Math.min(0.7, rotX));
+  lastX = tx; lastY = ty;
+}, { passive: false });
+
+let lastT = performance.now();
+
+requestAnimationFrame(draw); // kick off loop
+
+function draw(ts) {
+  const raw = Math.min((ts - lastT) / 1000, 0.05);
+  lastT = ts;
+  const dt = paused ? 0 : raw * speed;
+  time += dt;
+  cloudTime += dt * 0.18; // cloud breathes much slower than the spiral rotates
+
+  const W = window.innerWidth, H = window.innerHeight;
+  // Torus sits left of center to give panel room
+  const scale = Math.min(W, H) * 0.30;
+  const narrow = W < 900;
+  const cx = narrow ? W * 0.50 : W * 0.38;
+  const cy = narrow ? Math.min(H * 0.42, 260) : H * 0.50;
+
+  if (!paused) {
+    rotY += dt * 0.055;
+    spiralProgress = Math.min(2.9, spiralProgress + dt * 0.0025); // runs to 2044
+    // Dividend phase — activates when slider goes past Year 10
+    const dpSource = (scrubbing && frozenYear !== null)
+      ? sliderToProgress(frozenYear)
+      : spiralProgress;
+    const dividendActive = dpSource >= 1.0;
+    dividendProgress = dividendActive
+      ? Math.min(1, (dpSource - 1.0) / 0.4) // fully saturated by ~2033
+      : 0;
+
+    // Year label — four Dividend phases
+    if (dividendActive) {
+      const yr = 2025 + Math.round((spiralProgress - 1.0) / 1.9 * 19);
+      const dp = dividendProgress;
+      // Four phases across the Dividend arc
+      // Phase 1: Provenance (dp 0–0.25, ~2025-2030)
+      // Phase 2: Accounting (dp 0.25–0.5, ~2030-2035)
+      // Phase 3: License (dp 0.5–0.75, ~2035-2040)
+      // Phase 4: Inference (dp 0.75–1.0, ~2040-2044)
+      let phase = '';
+      if (dp < 0.25) phase = 'Provenance';
+      else if (dp < 0.5) phase = 'Accounting';
+      else if (dp < 0.75) phase = 'License';
+      else phase = 'Inference';
+      yearEl.textContent = phase + ' · ' + Math.min(yr, 2044);
+    } else if (spiralProgress >= 0.99) {
+      yearEl.textContent = '2025 · The Loop Is Open';
+    } else {
+      yearEl.textContent = 'Year ' + Math.floor(spiralProgress * 10) + ' · ' + (2015 + Math.floor(spiralProgress * 10));
+    }
+
+    if (spiralProgress >= 0.35 && !shifted) {
+      shifted = true;
+      ringAlpha = 0.85;
+    }
+    if (ringAlpha > 0) ringAlpha = Math.max(0, ringAlpha - dt * 0.4);
+
+    parts.forEach(p => {
+      p.life += dt * 0.6;
+      if (p.life > p.maxLife) resetP(p, shifted);
+
+      // At Dividend closure: particles shift from inward extraction to
+      // surface circulation — centripetal → tangential
+      const circ = dividendProgress; // 0 = extraction behavior, 1 = circulation
+
+      if (p.type === 'extract') {
+        // During open loop: pulls inward toward bore
+        // During Dividend: redirects to surface flow along u axis
+        const inwardV = p.speed * 0.8;
+        const tangentialV = p.speed * 0.15;
+        p.u += p.speed * 2.5;
+        p.v += inwardV * (1 - circ) + tangentialV * circ;
+      }
+      else if (p.type === 'return') {
+        const inwardV = p.speed * 1.0;
+        const tangentialV = p.speed * 0.15;
+        p.u -= p.speed * 2.5;
+        p.v -= inwardV * (1 - circ) - tangentialV * circ;
+      }
+      else {
+        p.u += p.speed;
+        p.v += p.speed * 3 * (1 - circ * 0.7);
+      }
+    });
+  }
+
+  ctx.fillStyle = '#050504';
+  ctx.fillRect(0, 0, W, H);
+
+  // Horizon disk plane removed — orientation is read from the torus geometry itself
+
+  // Longitude lines
+  for (let j = 0; j < TV; j += 3) {
+    ctx.beginPath(); let first = true;
+    for (let i = 0; i <= TU; i++) {
+      const [x3,y3,z3] = rings[i % TU][j];
+      const [x,y] = project(x3,y3,z3,cx,cy,rotX,rotY,scale);
+      if (first) { ctx.moveTo(x,y); first = false; } else ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle = 'rgba(95,90,72,0.22)';
+    ctx.lineWidth = 0.45; ctx.stroke();
+  }
+
+  // Torus skin — translucent surface, hue derived from position in system
+  // Drawn as filled quads between adjacent latitude rings
+  for (let i = 0; i < TU; i++) {
+    const ni = (i + 1) % TU;
+    const u = (i / TU) * Math.PI * 2;
+    const su = Math.sin(u);
+    // Hue by zone: gold=extraction arc, blue=return arc, neutral=transition
+    let r, g, b;
+    if (su > 0.3) {
+      // Extraction arc — gold
+      const t = Math.min(1, (su - 0.3) / 0.7);
+      r = Math.floor(200 + t * 30);
+      g = Math.floor(155 + t * 15);
+      b = Math.floor(55 + t * 10);
+    } else if (su < -0.3) {
+      // Return arc — blue, intensifies when Dividend activates
+      const t = Math.min(1, (-su - 0.3) / 0.7);
+      const dp = dividendProgress;
+      r = Math.floor(90 + t * 20 - dp * 30);
+      g = Math.floor(135 + t * 25 + dp * 20);
+      b = Math.floor(185 + t * 30 + dp * 55);
+    } else {
+      // Neutral transition — warm grey, shifts cooler during Dividend
+      const dp = dividendProgress;
+      r = Math.floor(130 - dp * 20);
+      g = Math.floor(122 - dp * 5);
+      b = Math.floor(108 + dp * 30);
+    }
+    for (let j = 0; j < TV; j++) {
+      const nj = (j + 1) % TV;
+      const p0 = rings[i][j],   p1 = rings[ni][j];
+      const p2 = rings[ni][nj], p3 = rings[i][nj];
+      const [ax,ay,az] = project(p0[0],p0[1],p0[2],cx,cy,rotX,rotY,scale);
+      const [bx,by]    = project(p1[0],p1[1],p1[2],cx,cy,rotX,rotY,scale);
+      const [cx2,cy2]  = project(p2[0],p2[1],p2[2],cx,cy,rotX,rotY,scale);
+      const [dx,dy]    = project(p3[0],p3[1],p3[2],cx,cy,rotX,rotY,scale);
+      // Backface cull
+      const crossZ = (bx-ax)*(dy-ay) - (by-ay)*(dx-ax);
+      if (crossZ > 0) continue;
+      // Depth fade — faces closer to viewer slightly brighter
+      const depthFade = Math.max(0, (az + 2.5) / 5.5);
+      // Inner bore glows warmer as vortex forms
+      const vMid = (j / TV) * Math.PI * 2;
+      const distBore = Math.abs(vMid - Math.PI) / Math.PI;
+      const boreGlow = spiralProgress * Math.max(0, 1 - distBore * 2.5);
+      const dp = dividendProgress;
+      // During Dividend: bore shifts from warm white to cool resonant blue-white
+      const resonance = dp * Math.max(0, 1 - distBore * 2.0);
+      const alpha = (0.07 + boreGlow * 0.06 + resonance * 0.12) * depthFade;
+      const fr = Math.floor(Math.min(255, r + boreGlow * 40 - resonance * 20));
+      const fg = Math.floor(Math.min(255, g + boreGlow * 30 + resonance * 15));
+      const fb = Math.floor(Math.min(255, b + boreGlow * 10 + resonance * 60));
+      ctx.beginPath();
+      ctx.moveTo(ax,ay); ctx.lineTo(bx,by);
+      ctx.lineTo(cx2,cy2); ctx.lineTo(dx,dy);
+      ctx.closePath();
+      ctx.fillStyle = `rgba(${fr},${fg},${fb},${alpha})`;
+      ctx.fill();
+    }
+  }
+
+  // Latitude rings
+  for (let i = 0; i < TU; i += 2) {
+    const u = (i / TU) * Math.PI * 2;
+    const ring = rings[i];
+    let dAcc = 0, dCnt = 0;
+    ctx.beginPath(); let first = true;
+    for (let j = 0; j <= TV; j++) {
+      const [x3,y3,z3] = ring[j % TV];
+      const [x,y,z] = project(x3,y3,z3,cx,cy,rotX,rotY,scale);
+      dAcc += z; dCnt++;
+      if (first) { ctx.moveTo(x,y); first = false; } else ctx.lineTo(x,y);
+    }
+    const depth = 0.05 + ((dAcc/dCnt + 2) / 6) * 0.13;
+    const su = Math.sin(u);
+    if (su > 0.55) ctx.strokeStyle = `rgba(210,162,65,${depth * 1.6})`;
+    else if (su < -0.55) ctx.strokeStyle = `rgba(130,160,190,${depth * 1.4})`;
+    else ctx.strokeStyle = `rgba(90,86,75,${depth * 1.1})`;
+    ctx.lineWidth = 0.7; ctx.stroke();
+  }
+
+  // Inner wall fill — soft white volume on the bore
+  const jI = Math.floor(TV * 0.5);
+  for (let i = 0; i < TU; i++) {
+    const ni = (i+1) % TU;
+    const p0 = rings[i][jI], p1 = rings[ni][jI];
+    const p2 = rings[ni][jI+1], p3 = rings[i][jI+1];
+    const [ax,ay] = project(p0[0],p0[1],p0[2],cx,cy,rotX,rotY,scale);
+    const [bx,by] = project(p1[0],p1[1],p1[2],cx,cy,rotX,rotY,scale);
+    const [cx2,cy2] = project(p2[0],p2[1],p2[2],cx,cy,rotX,rotY,scale);
+    const [dx,dy] = project(p3[0],p3[1],p3[2],cx,cy,rotX,rotY,scale);
+    const crossZ = (bx-ax)*(dy-ay) - (by-ay)*(dx-ax);
+    if (crossZ < 0) {
+      ctx.beginPath();
+      ctx.moveTo(ax,ay); ctx.lineTo(bx,by); ctx.lineTo(cx2,cy2); ctx.lineTo(dx,dy);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(255,255,255,0.07)';
+      ctx.fill();
+    }
+  }
+
+  // Hourglass glow — builds on inner bore as vortex forms
+  // During Dividend: shifts from warm gold to cool resonant blue-white and blooms
+  if (spiralProgress > 0.12) {
+    const gi = Math.pow((spiralProgress-0.12)/0.88, 1.5);
+    const dp2 = dividendProgress;
+
+    // Collect bore ring points to find projected center
+    let boreCX = 0, boreCY = 0, borePts = [];
+    for (let i = 0; i < TU; i++) {
+      const pt = rings[i][jI];
+      const [gx,gy,gz] = project(pt[0],pt[1],pt[2],cx,cy,rotX,rotY,scale);
+      borePts.push([gx,gy,gz]);
+      boreCX += gx; boreCY += gy;
+    }
+    boreCX /= TU; boreCY /= TU;
+
+    // Per-point glow — warm gold fading to cool blue as dividend rises
+    for (let i = 0; i < TU; i++) {
+      const [gx,gy,gz] = borePts[i];
+      if (gz > -1.0) {
+        const df = Math.max(0,(gz+2)/4.5);
+        const gr = (6 + gi*22) * (1 + dp2 * 1.8);
+        const gg = ctx.createRadialGradient(gx,gy,0,gx,gy,gr);
+        const warmR = Math.floor(225 - dp2*80);
+        const warmG = Math.floor(200 - dp2*40);
+        const warmB = Math.floor(145 + dp2*110);
+        const alpha = (gi*df*0.22) * (1 - dp2*0.4);
+        gg.addColorStop(0,`rgba(${warmR},${warmG},${warmB},${alpha})`);
+        gg.addColorStop(1,`rgba(${warmR-20},${warmG-20},${warmB},0)`);
+        ctx.beginPath(); ctx.arc(gx,gy,gr,0,Math.PI*2);
+        ctx.fillStyle = gg; ctx.fill();
+      }
+    }
+
+    // BLOOM — the bore cloud at full Dividend
+    // Three layers breathing independently — each its own life
+    // The cloud does NOT track the spiral rotation — it is the field, not the structure
+    if (dp2 > 0.05) {
+      const bloom = Math.pow(dp2, 1.4);
+
+      // Each layer has its own slow independent rhythm via cloudTime
+      // Core: deepest, slowest breath — almost still
+      const corePulse = 1 + Math.sin(cloudTime * 0.7) * 0.06;
+      const coreR = (18 + bloom * 110) * corePulse;
+      // Core drifts very slightly — independent of torus rotation
+      const coreDX = Math.sin(cloudTime * 0.3) * bloom * 8;
+      const coreDY = Math.cos(cloudTime * 0.23) * bloom * 5;
+      const core = ctx.createRadialGradient(
+        boreCX + coreDX, boreCY + coreDY, 0,
+        boreCX + coreDX, boreCY + coreDY, coreR
+      );
+      core.addColorStop(0, `rgba(210,230,255,${bloom*0.38})`);
+      core.addColorStop(0.35, `rgba(180,210,255,${bloom*0.22})`);
+      core.addColorStop(0.7, `rgba(140,180,240,${bloom*0.10})`);
+      core.addColorStop(1, 'rgba(100,150,220,0)');
+      ctx.beginPath(); ctx.arc(boreCX + coreDX, boreCY + coreDY, coreR, 0, Math.PI*2);
+      ctx.fillStyle = core; ctx.fill();
+
+      // Halo: medium drift, own rotation offset — the Mie scattering layer
+      const haloPulse = 1 + Math.sin(cloudTime * 0.41 + 1.2) * 0.09;
+      const haloR = (45 + bloom * 200) * haloPulse;
+      const haloDX = Math.sin(cloudTime * 0.19 + 2.1) * bloom * 18;
+      const haloDY = Math.cos(cloudTime * 0.15 + 0.8) * bloom * 12;
+      const halo = ctx.createRadialGradient(
+        boreCX + haloDX, boreCY + haloDY, 0,
+        boreCX + haloDX, boreCY + haloDY, haloR
+      );
+      halo.addColorStop(0, `rgba(180,210,255,${bloom*0.14})`);
+      halo.addColorStop(0.4, `rgba(160,200,255,${bloom*0.08})`);
+      halo.addColorStop(1, 'rgba(120,170,240,0)');
+      ctx.beginPath(); ctx.arc(boreCX + haloDX, boreCY + haloDY, haloR, 0, Math.PI*2);
+      ctx.fillStyle = halo; ctx.fill();
+
+      // Eye: outermost breath — most independent, longest cycle
+      // Expands and contracts on its own, barely connected to the torus at all
+      if (dp2 > 0.85) {
+        const eyeBloom = (dp2 - 0.85) / 0.15;
+        const eyePulse = 1 + Math.sin(cloudTime * 0.22 + 3.7) * 0.13;
+        const eyeR = (120 + eyeBloom * 180) * eyePulse;
+        const eyeDX = Math.sin(cloudTime * 0.11 + 1.5) * bloom * 28;
+        const eyeDY = Math.cos(cloudTime * 0.09 + 4.2) * bloom * 18;
+        const eye = ctx.createRadialGradient(
+          boreCX + eyeDX, boreCY + eyeDY, 0,
+          boreCX + eyeDX, boreCY + eyeDY, eyeR
+        );
+        eye.addColorStop(0, `rgba(200,225,255,${eyeBloom*0.09})`);
+        eye.addColorStop(0.5, `rgba(170,205,255,${eyeBloom*0.05})`);
+        eye.addColorStop(1, 'rgba(140,185,250,0)');
+        ctx.beginPath(); ctx.arc(boreCX + eyeDX, boreCY + eyeDY, eyeR, 0, Math.PI*2);
+        ctx.fillStyle = eye; ctx.fill();
+      }
+    }
+  }
+
+  // Spiral
+  const steps = Math.floor(spiralProgress * SPIRAL_TOTAL);
+  if (steps > 2) {
+    const proj = spiralPts.slice(0, steps).map(([x3,y3,z3]) =>
+      project(x3,y3,z3,cx,cy,rotX,rotY,scale)
+    );
+    for (let i = 1; i < proj.length; i++) {
+      const [x,y,z] = proj[i];
+      const [px,py] = proj[i-1];
+      const age = i / proj.length;
+      const df = Math.max(0.1, (z + 2.5) / 5.5);
+      const alpha = age * 0.88 * df;
+      const b = Math.floor(158 + age * 90);
+      ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(x,y);
+      ctx.strokeStyle = `rgba(${b},${b-4},${b-10},${alpha})`;
+      ctx.lineWidth = age > 0.88 ? 4.4 : 3.1;
+      ctx.stroke();
+    }
+    const [tx,ty] = proj[proj.length-1];
+    const g = ctx.createRadialGradient(tx,ty,0,tx,ty,18);
+    g.addColorStop(0,'rgba(248,242,225,0.45)');
+    g.addColorStop(1,'rgba(248,242,225,0)');
+    ctx.beginPath(); ctx.arc(tx,ty,18,0,Math.PI*2);
+    ctx.fillStyle = g; ctx.fill();
+    ctx.beginPath(); ctx.arc(tx,ty,4,0,Math.PI*2);
+    ctx.fillStyle = 'rgba(250,244,228,0.96)'; ctx.fill();
+  }
+
+  // Phase ring
+  if (ringAlpha > 0) {
+    for (let i = 0; i < TU; i++) {
+      const [x3,y3,z3] = rings[i][0];
+      const [x,y] = project(x3,y3,z3,cx,cy,rotX,rotY,scale);
+      ctx.beginPath(); ctx.arc(x,y,3.5,0,Math.PI*2);
+      ctx.fillStyle = `rgba(115,158,85,${ringAlpha * 0.8})`;
+      ctx.fill();
+    }
+  }
+
+  // Particles — density grows with spiral progress
+  const activeParts = Math.floor(80 + spiralProgress * 180);
+  parts.slice(0, Math.min(activeParts, PCOUNT)).forEach(p => {
+    const vv = p.v % (Math.PI * 2);
+    const x3 = (R + r * Math.cos(vv)) * Math.cos(p.u);
+    const y3 = r * Math.sin(vv);
+    const z3 = (R + r * Math.cos(vv)) * Math.sin(p.u);
+    const [x,y,z,s] = project(x3,y3,z3,cx,cy,rotX,rotY,scale);
+    const fi = Math.min(p.life / 0.2, 1);
+    const fo = 1 - Math.max((p.life - (p.maxLife - 0.25)) / 0.25, 0);
+    const vv2 = p.v % (Math.PI*2);
+    const distFromBore = Math.abs(vv2 - Math.PI) / Math.PI;
+    const boreBoost = spiralProgress * Math.max(0, 1 - distFromBore*1.8);
+    const alpha = Math.min(1, fi * fo * Math.max(0.15, (z+2.5)/5.5) * (1.0 + boreBoost*1.2));
+    const sz = 1.4 + s*0.6;  // small, fixed — density creates the mass not size
+    let col;
+    if (p.type === 'extract') col = `rgba(225,175,70,${alpha})`;
+    else if (p.type === 'return') col = `rgba(110,155,195,${alpha})`;
+    else col = `rgba(215,195,145,${alpha})`;
+    ctx.beginPath(); ctx.arc(x,y,sz,0,Math.PI*2);
+    ctx.fillStyle = col; ctx.fill();
+  });
+
+  // ── Effective progress for annotations (slider or live) ──
+  const effectiveP = (scrubbing && frozenYear !== null) ? sliderToProgress(frozenYear) : spiralProgress;
+
+  // ── Rupture pulse — moments that change everything ──
+  // Brief flash of light at key thresholds
+  const RUPTURES = [
+    { p: 0.58, col: [255, 220, 160] },  // ChatGPT — gold flash
+    { p: 0.92, col: [180, 160, 255] },  // 2025 vortex — violet
+    { p: 1.0,  col: [110, 175, 235] },  // Dividend begins — blue arc
+    { p: 1.85, col: [140, 235, 170] },  // Closure — green
+  ];
+  RUPTURES.forEach(r => {
+    const dist = Math.abs(effectiveP - r.p);
+    if (dist < 0.04) {
+      const pulseAlpha = Math.max(0, (0.04 - dist) / 0.04) * 0.10;
+      ctx.save();
+      const pg = ctx.createRadialGradient(cx, cy, 0, cx, cy, scale * 1.6);
+      pg.addColorStop(0, `rgba(${r.col[0]},${r.col[1]},${r.col[2]},${pulseAlpha})`);
+      pg.addColorStop(1, `rgba(${r.col[0]},${r.col[1]},${r.col[2]},0)`);
+      ctx.fillStyle = pg;
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+    }
+  });
+
+  // ── Three-column annotation system ──
+  //   CENTER: the fact — what happened, when, precise
+  //   LEFT:   the model — what the torus is doing structurally at this moment
+  //   RIGHT:  the meaning — the human substrate story, the cost, the sub-story
+  const ANNOTATIONS = [
+    {
+      p: 0.05, window: 0.075,
+      center: { year: '2015', title: 'The Substrate Begins', fact: 'Common Crawl indexes 3 billion web pages.\nAll of it written by human beings.\nNone of them asked.' },
+      left:   { head: 'The Model', body: 'Spiral just launched.\nExtraction arc thin — gold thread\ntracing the first loop.\nParticles sparse, slow.' },
+      right:  { head: 'The Story', body: 'Every Reddit thread.\nEvery Wikipedia edit.\nEvery teacher\'s lesson plan.\nThe raw material assembles itself\nwithout knowing it.' },
+    },
+    {
+      p: 0.18, window: 0.065,
+      center: { year: '2017', title: 'Attention Is All You Need', fact: 'Google Brain publishes the Transformer.\nThe architecture that makes scale possible.\nSeven authors. One paper. Everything changes.' },
+      left:   { head: 'The Model', body: 'Spiral accelerates.\nExtraction arc brightens.\nThe geometry of compound\nextraction becomes visible.' },
+      right:  { head: 'The Story', body: 'The engine is built.\nNow it needs fuel.\nThe fuel is still not\nrecognized as fuel.' },
+    },
+    {
+      p: 0.30, window: 0.065,
+      center: { year: '2019', title: 'Too Dangerous to Publish', fact: 'GPT-2: 1.5B parameters.\nOpenAI calls it too dangerous to release.\nReleases it anyway, six months later.\nThe substrate absorbs the signal.' },
+      left:   { head: 'The Model', body: 'Extraction arc thickening.\nThe bore begins to suggest\nits eventual form — a shadow\nof the future cloud.' },
+      right:  { head: 'The Story', body: '"Too dangerous" was a\nmarketing decision.\nThe writers whose work\ntrained it were not consulted.\nThey were not mentioned.' },
+    },
+    {
+      p: 0.40, window: 0.065, rupture: true,
+      center: { year: '2020', title: 'Scale Tips', fact: 'GPT-3: 175 billion parameters.\n$4.6M to train a single run.\nThe extraction economy\nbecomes an industry.' },
+      left:   { head: 'The Model', body: 'Spiral density visible.\nGold arc luminous.\nParticle count rising —\nthe extraction field\nhas mass now.' },
+      right:  { head: 'The Story', body: 'At this scale, human text\nis no longer a resource.\nIt is infrastructure.\nAnd infrastructure\nhas no royalty structure.' },
+    },
+    {
+      p: 0.50, window: 0.065,
+      center: { year: '2021', title: 'Code Becomes a Product', fact: 'GitHub Copilot launches.\nTrained on public code repositories.\nCode written by developers,\nsold as a subscription.\nFirst $10/month extracted from substrate.' },
+      left:   { head: 'The Model', body: 'Particles migrate inward.\nThe bore draws them.\nExtraction has direction now —\nnot just scale.' },
+      right:  { head: 'The Story', body: 'The coder who wrote\nthe Stack Overflow answer\nthat trained Copilot\ngets a bill for Copilot.\nThis is the open loop\nmade commercial.' },
+    },
+    {
+      p: 0.59, window: 0.075, rupture: true,
+      center: { year: '2022', title: 'The Loop Goes Public', fact: 'ChatGPT: 100 million users in 60 days.\nFastest product adoption in history.\nThe open loop becomes\nlegible to everyone.\nEveryone who isn\'t being paid.' },
+      left:   { head: 'The Model', body: 'Gold arc at maximum luminance.\nBore cloud begins forming —\nfirst suggestion of the\nfermata to come.\nThe vortex is building.' },
+      right:  { head: 'The Story', body: 'The teachers saw it first.\nThen the writers.\nThen the lawyers.\nThen the artists.\nThey all asked the same\nquestion. No one answered.' },
+    },
+    {
+      p: 0.69, window: 0.065,
+      center: { year: '2023', title: 'The Race Begins', fact: 'GPT-4. Claude. Gemini. Llama.\nFour major frontier models\nin twelve months.\nThe substrate cannot keep pace\nwith what it is producing.' },
+      left:   { head: 'The Model', body: 'Multiple extraction arcs\noverlap in the geometry.\nSpiral density approaching\nthe Dividend threshold.\nThe bore cloud thickens.' },
+      right:  { head: 'The Story', body: 'The models are trained\non each other\'s outputs now.\nThe substrate is being\ndiluted by its own product.\nThe circle is not closed.\nIt is tightening.' },
+    },
+    {
+      p: 0.79, window: 0.065,
+      center: { year: '2024', title: 'The Number', fact: '$150 billion in AI revenue.\nNo line item for the raw material.\nThe oil company\nhas no accounting\nfor the oil.' },
+      left:   { head: 'The Model', body: 'Bore cloud dense and\nindependent — breathing\non its own time.\nThe cloud does not track\nthe spiral\'s rotation.\nTwo systems, one center.' },
+      right:  { head: 'The Story', body: 'The Dividend math:\n$5,000/year per maintainer.\n$24.5B annually.\n16 cents per dollar\nof 2024 AI revenue.\nEmbarrassingly small.' },
+    },
+    {
+      p: 0.91, window: 0.075, rupture: true,
+      center: { year: '2025', title: 'The Vortex', fact: 'Extraction field and return field\nbegin to contest the same space.\nThe polarity is visible.\nThe argument has begun.' },
+      left:   { head: 'The Model', body: 'Spiral at maximum extension.\nThe bore is the axis of\nthe whole geometry now.\nThe loop is structurally\nincomplete.\nIt will not remain so.' },
+      right:  { head: 'The Story', body: 'The Teacher\'s Dilemma:\nThe model learned\nthe mark.\nIt did not learn\nthe weight.\nThe Dividend is how AI\nbecomes worthy\nof the teacher.' },
+    },
+    {
+      p: 1.06, window: 0.082,
+      center: { year: '2026–30', title: 'Provenance', fact: 'Data lineage systems emerge.\nTraining datasets become\ndeclared and traceable.\nThe substrate\nbecomes legible.' },
+      left:   { head: 'The Model', body: 'Blue return arc appears\nfor the first time.\nFaint — a suggestion\nof the path back.\nThe loop has a direction\nit has never had before.' },
+      right:  { head: 'The Story', body: 'The first mechanism:\nmake the raw material visible.\nYou cannot compensate\nwhat you cannot see.\nProvenance is the\nprerequisite.' },
+    },
+    {
+      p: 1.22, window: 0.082,
+      center: { year: '2030–35', title: 'Accounting', fact: 'Mandatory training data declaration.\nModel cards include substrate sources.\nThe cost of the raw material\nis named for the first time.' },
+      left:   { head: 'The Model', body: 'Return arc strengthens.\nBlue and gold arcs\nrunning parallel —\ncounterpoint.\nThe loop is asymmetric\nbut intentional.' },
+      right:  { head: 'The Story', body: 'Sine without cosine\nis extraction.\nSine with cosine\nis resonance.\nThe Accounting phase\nadds the cosine.' },
+    },
+    {
+      p: 1.38, window: 0.082,
+      center: { year: '2035–40', title: 'License', fact: 'Model license fees scale with compute.\nThe Dividend floor is established.\n$24.5B annually enters\nthe return arc.\nThe first real flow.' },
+      left:   { head: 'The Model', body: 'Return arc luminous.\nParticles begin circulating\nrather than only extracting.\nThe bore cloud breathes\nmore slowly — the\npressure is releasing.' },
+      right:  { head: 'The Story', body: 'The Ellipsis Group\nreceives the first\nDistributed Dividend.\n$5,000 per maintainer.\nNot enough.\nBut the structure\nis established.' },
+    },
+    {
+      p: 1.58, window: 0.082,
+      center: { year: '2040–44', title: 'Inference', fact: 'Usage tax scales with\ninference volume.\nAs AI industry grows,\nDividend grows proportionally.\nThe loop approaches closure.' },
+      left:   { head: 'The Model', body: 'Gold and blue arcs\nin balance.\nParticles in full\ncirculation — neither\nextraction nor return,\njust current.' },
+      right:  { head: 'The Story', body: 'Current as currency.\nCurrere: to run, to flow.\nThe Dividend is the\nmechanism that converts\na drain into a current.' },
+    },
+    {
+      p: 1.86, window: 0.09, rupture: true,
+      center: { year: '2044', title: 'The Loop Closes', fact: 'A closed economic loop.\nThe substrate is compensated.\nThe open loop\nis a memory.' },
+      left:   { head: 'The Model', body: 'The bore — always\nbreathing in, never out —\nbegins to exhale.\nThe fermata resolves.\nThe torus is complete.' },
+      right:  { head: 'The Story', body: 'Beautiful.\nThe loop ran forward\nin time.\nThe topology was correct\nbefore anyone acted on it.\nForm as the proof.' },
+    },
+  ];
+
+  const ANN_FADE = 0.012; // faster dissolve in/out
+
+  ANNOTATIONS.forEach(ann => {
+    const w = ann.window || 0.10;
+    const dist = effectiveP - ann.p;
+    if (dist < -ANN_FADE || dist > w + ANN_FADE) return;
+    let alpha = 0;
+    if (dist < 0) alpha = (dist + ANN_FADE) / ANN_FADE;
+    else if (dist > w) alpha = 1 - (dist - w) / ANN_FADE;
+    else alpha = 1;
+    alpha = Math.max(0, Math.min(1, alpha));
+
+    // Monochrome only — brightness via alpha, no color variation
+    const warm  = (a) => `rgba(215,205,180,${a})`;   // warm neutral — year, title
+    const cool  = (a) => `rgba(175,185,200,${a})`;   // cool neutral — left column
+    const mid   = (a) => `rgba(175,168,148,${a})`;   // mid — body text
+
+    const yearSize  = Math.max(7,  Math.floor(scale * 0.042)); // small, above title
+    const titleSize = Math.max(10, Math.floor(scale * 0.068)); // title — main read
+    const headSize  = Math.max(7,  Math.floor(scale * 0.044)); // column head
+    const bodySize  = Math.max(6,  Math.floor(scale * 0.038)); // body
+    const lineH     = bodySize * 1.68;
+
+    // ── CENTER: year · title tight together · rule · facts ──
+    if (ann.center) {
+      const c2 = ann.center;
+      const factsLines = c2.fact.split('\n');
+      const factY = cy + scale * 0.78;
+
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+
+      // Year — small, just above title
+      ctx.font = `300 ${yearSize}px Inter, sans-serif`;
+      ctx.fillStyle = warm(alpha * 0.45);
+      ctx.fillText(c2.year, cx, factY);
+
+      // Title — tight under year, scaled up, brighter
+      const titleY2 = factY + yearSize * 1.35;
+      ctx.font = `400 ${titleSize}px Inter, sans-serif`;
+      ctx.fillStyle = warm(alpha * 0.92);
+      ctx.fillText(c2.title, cx, titleY2);
+
+      // Thin rule — tight under title
+      const ruleY = titleY2 + titleSize * 1.3;
+      const rw = scale * 0.12;
+      ctx.strokeStyle = warm(alpha * 0.20);
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(cx - rw, ruleY);
+      ctx.lineTo(cx + rw, ruleY);
+      ctx.stroke();
+
+      // Facts — below rule
+      ctx.font = `300 ${bodySize}px Inter, sans-serif`;
+      ctx.fillStyle = mid(alpha * 0.68);
+      factsLines.forEach((line, i) => {
+        ctx.fillText(line, cx, ruleY + bodySize * 0.9 + i * lineH);
+      });
+      ctx.restore();
+    }
+
+    // ── LEFT: Geometry — what the torus is doing ──
+    if (ann.left) {
+      const l = ann.left;
+      const lx = cx - scale * 1.08;
+      const ly = cy - scale * 0.26;
+      const bodyLines = l.body.split('\n');
+
+      ctx.save();
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'top';
+
+      // Column head — renamed to Geometry
+      ctx.font = `500 ${headSize}px Inter, sans-serif`;
+      ctx.fillStyle = cool(alpha * 0.60);
+      ctx.fillText('Geometry', lx, ly);
+
+      const rw = scale * 0.12;
+      ctx.strokeStyle = cool(alpha * 0.18);
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(lx - rw, ly + headSize * 1.35);
+      ctx.lineTo(lx, ly + headSize * 1.35);
+      ctx.stroke();
+
+      ctx.font = `300 ${bodySize}px Inter, sans-serif`;
+      ctx.fillStyle = cool(alpha * 0.55);
+      bodyLines.forEach((line, i) => {
+        ctx.fillText(line, lx, ly + headSize * 1.8 + i * lineH);
+      });
+      ctx.restore();
+    }
+
+    // ── RIGHT: Substrate — the human cost and meaning ──
+    if (ann.right) {
+      const r = ann.right;
+      const rx = cx + scale * 1.08;
+      const ry = cy - scale * 0.26;
+      const bodyLines = r.body.split('\n');
+
+      ctx.save();
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+
+      // Column head — renamed to Substrate
+      ctx.font = `500 ${headSize}px Inter, sans-serif`;
+      ctx.fillStyle = warm(alpha * 0.60);
+      ctx.fillText('Substrate', rx, ry);
+
+      const rw = scale * 0.12;
+      ctx.strokeStyle = warm(alpha * 0.18);
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(rx, ry + headSize * 1.35);
+      ctx.lineTo(rx + rw, ry + headSize * 1.35);
+      ctx.stroke();
+
+      ctx.font = `300 ${bodySize}px Inter, sans-serif`;
+      ctx.fillStyle = mid(alpha * 0.62);
+      bodyLines.forEach((line, i) => {
+        ctx.fillText(line, rx, ry + headSize * 1.8 + i * lineH);
+      });
+      ctx.restore();
+    }
+  });
+
+  // Title — centered below the bore cloud, fades in with Dividend
+  if (dividendProgress > 0.05) {
+    const titleAlpha = Math.pow(dividendProgress, 2.0) * 0.82;
+    const titleY = cy + scale * 0.72;
+    ctx.save();
+    ctx.textBaseline = 'middle';
+
+    // Main title — letter spaced
+    const titleSize = Math.max(11, Math.floor(scale * 0.088));
+    ctx.font = `300 ${titleSize}px Inter, sans-serif`;
+    ctx.fillStyle = `rgba(210,220,240,${titleAlpha})`;
+    const title = 'THE ECONOMIC TORUS';
+    const letterSpacing = titleSize * 0.28;
+    let totalW = 0;
+    for (const ch of title) totalW += ctx.measureText(ch).width + (ch === ' ' ? letterSpacing * 0.5 : letterSpacing);
+    let tx = cx - totalW / 2;
+    for (const ch of title) {
+      ctx.fillText(ch, tx, titleY);
+      tx += ctx.measureText(ch).width + (ch === ' ' ? letterSpacing * 0.5 : letterSpacing);
+    }
+
+    // Hero line — tight under title, immediate
+    if (dividendProgress > 0.08) {
+      const heroAlpha = Math.pow((dividendProgress - 0.08) / 0.3, 1.4) * 0.52;
+      const heroSize = Math.max(6, Math.floor(scale * 0.040));
+      ctx.font = `300 ${heroSize}px Inter, sans-serif`;
+      ctx.fillStyle = `rgba(175,185,205,${Math.min(heroAlpha, 0.52)})`;
+      ctx.textAlign = 'center';
+      ctx.fillText('If this structure is correct, the loop cannot remain open.', cx, titleY + titleSize * 1.55);
+    }
+
+    // Forecast line — fades in later, below hero
+    if (dividendProgress > 0.35) {
+      const subAlpha = Math.pow((dividendProgress - 0.35) / 0.65, 2.0) * 0.30;
+      const subSize = Math.max(6, Math.floor(scale * 0.036));
+      ctx.font = `300 ${subSize}px Inter, sans-serif`;
+      ctx.fillStyle = `rgba(140,155,180,${subAlpha})`;
+      ctx.textAlign = 'center';
+      ctx.fillText('A closed economic loop will eventually be required.', cx, titleY + titleSize * 1.55 + Math.max(6, Math.floor(scale * 0.040)) * 2.4);
+    }
+    ctx.restore();
+  }
+
+  requestAnimationFrame(draw);
+}
+
+
+// ── Timeline scrubber ──
+const slider = document.getElementById('timeline-slider');
+const tlLabel = document.getElementById('tl-label');
+// Map slider 0-100 → spiralProgress 0→1.2 (0-10 years + future)
+function sliderToProgress(v) {
+  if (v <= 100) return v / 100; // 0-100 → spiralProgress 0-1.0 (2015-2025)
+  return 1.0 + (v - 100) / 100 * 1.9; // 100-200 → 1.0-2.9 (2025-2044)
+}
+function progressToYear(p) {
+  // 0 = 2015, 1.0 = 2025 (10 years), 1.2 = 2027+
+  const yr = Math.floor(p * 10);
+  if (p >= 1.0) return '20' + (15 + Math.floor(p * 10));
+  return String(2015 + Math.floor(p * 10));
+}
+function progressToLabel(p) {
+  if (p <= 0.02) return 'Year 0 · 2015';
+  if (p >= 1.0) {
+    const yr = 2025 + Math.round((p - 1.0) / 1.9 * 19);
+    const dp = Math.min(1, (p - 1.0) / 0.4);
+    let phase = '';
+    if (dp < 0.25) phase = 'Provenance';
+    else if (dp < 0.5) phase = 'Accounting';
+    else if (dp < 0.75) phase = 'License';
+    else phase = 'Inference';
+    return phase + ' · ' + Math.min(yr, 2044);
+  }
+  const yr = 2015 + Math.floor(p * 10);
+  return 'Year ' + Math.floor(p * 10) + ' · ' + yr;
+}
+
+slider.addEventListener('input', () => {
+  scrubbing = true;
+  frozenYear = parseFloat(slider.value);
+  const prog = sliderToProgress(frozenYear);
+  spiralProgress = Math.min(prog, 1.0);
+  tlLabel.textContent = progressToLabel(prog);
+  yearEl.textContent = progressToLabel(prog);
+  // Sync particle state
+  if (spiralProgress >= 0.35 && !shifted) {
+    shifted = true; ringAlpha = 0.85;
+  }
+  paused = true;
+  document.getElementById('bp').textContent = 'Play';
+  document.getElementById('bp').classList.remove('active');
+});
+
+slider.addEventListener('change', () => {
+  // Released — stay frozen until play pressed
+});
+
+// Update slider as animation runs
+const origDraw = draw;
+// Patch yearEl update to also move slider
+const _updateTimeline = () => {
+  if (!scrubbing) {
+    const pct = Math.min(spiralProgress / 1.2, 1) * 100;
+    slider.value = pct;
+    tlLabel.textContent = progressToLabel(spiralProgress);
+  }
+};
+// Hook into rAF cycle via a secondary interval
+setInterval(_updateTimeline, 200);
+
+// Still / screenshot helper — copies canvas to new tab
+document.getElementById('still-btn').addEventListener('click', () => {
+  const dataURL = c.toDataURL('image/png');
+  const w = window.open('');
+  w.document.write('<body style="margin:0;background:#000"><img src="' + dataURL + '" style="max-width:100%;display:block"></body>');
+  w.document.title = 'THS · ' + tlLabel.textContent;
+});
+
+// Pause button handled by btns.pause listener above — scrubbing cleared on resume there too
+
+
+// Dividend indicator
+const divEl = document.getElementById('dividend-indicator');
+setInterval(() => {
+  const prog = typeof frozenYear !== 'undefined' && frozenYear !== null
+    ? sliderToProgress(frozenYear) : 0;
+  if (prog >= 2.85) {
+    divEl.textContent = '2044 · Gibson · Jobs · The Loop Is Closed';
+    divEl.classList.add('active');
+  } else if (prog > 1.0) {
+    divEl.textContent = 'The Blue Arc · The Loop Closes';
+    divEl.classList.add('active');
+  } else if (prog >= 0.95) {
+    divEl.textContent = '2025 · The Loop Is Open';
+    divEl.classList.add('active');
+  } else {
+    divEl.classList.remove('active');
+    divEl.textContent = '';
+  }
+}, 300);
+
+// ── Procedural ambient audio — Glass-inspired ──
+// D minor / F major arpeggios, slow cycling, long sustain, sparse voicing
+// Entirely generated via Web Audio API — no external files, no copyright
+
+let audioCtx = null;
+let audioMuted = true;
+let audioRunning = false;
+let masterGain = null;
+let reverbNode = null;
+
+function buildReverb(ctx, duration = 3.5, decay = 2.2) {
+  const sr = ctx.sampleRate;
+  const len = sr * duration;
+  const buf = ctx.createBuffer(2, len, sr);
+  for (let c = 0; c < 2; c++) {
+    const d = buf.getChannelData(c);
+    for (let i = 0; i < len; i++) {
+      d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+    }
+  }
+  const conv = ctx.createConvolver();
+  conv.buffer = buf;
+  return conv;
+}
+
+function playTone(freq, startTime, duration, gainPeak = 0.06, detune = 0) {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const env = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(freq, startTime);
+  osc.detune.setValueAtTime(detune, startTime);
+
+  const attack = 0.8, release = duration * 0.55;
+  env.gain.setValueAtTime(0, startTime);
+  env.gain.linearRampToValueAtTime(gainPeak, startTime + attack);
+  env.gain.setValueAtTime(gainPeak, startTime + duration - release);
+  env.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+  osc.connect(env);
+  env.connect(reverbNode);
+  env.connect(masterGain);
+  osc.start(startTime);
+  osc.stop(startTime + duration + 0.1);
+}
+
+// Harmonic series — Glass uses simple triadic arpeggios, modal shifts
+// D minor: D3 F3 A3 C4 D4 F4 A4
+// F major:  F3 A3 C4 F4
+// Bb major: Bb2 D3 F3 Bb3
+const NOTE = {
+  Bb2: 116.54, C3: 130.81, D3: 146.83, E3: 164.81, F3: 174.61,
+  G3: 196.00, A3: 220.00, Bb3: 233.08, C4: 261.63, D4: 293.66,
+  E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, C5: 523.25
+};
+
+// Patterns — each is an array of [freq, duration, gain] triplets
+// They overlap and drift, creating Glass-like layering
+const PATTERNS = [
+  // Pattern A — slow D minor arpeggio, foundational
+  [
+    [NOTE.D3, 4.2, 0.055], [NOTE.F3, 3.8, 0.048], [NOTE.A3, 4.5, 0.052],
+    [NOTE.C4, 3.6, 0.044], [NOTE.D4, 5.0, 0.058], [NOTE.A3, 3.2, 0.040],
+    [NOTE.F3, 4.8, 0.046],
+  ],
+  // Pattern B — sustained pad notes, slower
+  [
+    [NOTE.D3, 8.5, 0.035], [NOTE.A3, 7.2, 0.032], [NOTE.F3, 9.0, 0.030],
+    [NOTE.C4, 6.8, 0.028],
+  ],
+  // Pattern C — upper register, very sparse, bright
+  [
+    [NOTE.D4, 5.5, 0.025], [NOTE.F4, 4.2, 0.022], [NOTE.A4, 3.8, 0.018],
+    [NOTE.C5, 6.0, 0.020],
+  ],
+  // Pattern D — modal shift to Bb, appears mid-cycle
+  [
+    [NOTE.Bb2, 6.0, 0.040], [NOTE.D3, 4.5, 0.038], [NOTE.F3, 5.2, 0.035],
+    [NOTE.Bb3, 7.0, 0.032],
+  ],
+];
+
+function schedulePattern(patternIdx, baseTime, cycleOffset) {
+  if (!audioCtx) return 0;
+  const pat = PATTERNS[patternIdx % PATTERNS.length];
+  let t = baseTime + cycleOffset;
+  const gap = 0.4 + Math.random() * 0.6;
+  pat.forEach(([freq, dur, gain]) => {
+    playTone(freq, t, dur, gain, (Math.random() - 0.5) * 4);
+    t += dur * 0.62 + gap;
+  });
+  return t - baseTime;
+}
+
+let audioScheduler = null;
+let audioPhase = 0;
+
+function startAudioEngine() {
+  if (audioRunning) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  masterGain = audioCtx.createGain();
+  masterGain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+  masterGain.gain.linearRampToValueAtTime(0.75, audioCtx.currentTime + 5.0);
+
+  reverbNode = buildReverb(audioCtx);
+  const reverbGain = audioCtx.createGain();
+  reverbGain.gain.setValueAtTime(0.50, audioCtx.currentTime);
+  reverbNode.connect(reverbGain);
+  reverbGain.connect(masterGain);
+  masterGain.connect(audioCtx.destination);
+
+  audioRunning = true;
+
+  // Resume context in case browser started it suspended
+  audioCtx.resume().then(() => {
+    function scheduleCycle() {
+      if (!audioRunning || !audioCtx) return;
+      const now = audioCtx.currentTime;
+      schedulePattern(0, now, 0);
+      schedulePattern(1, now, 2.8);
+      schedulePattern(3, now, 5.5);
+      if (audioPhase > 1) schedulePattern(2, now, 8.2);
+      audioPhase++;
+      const cycleDur = 36 + Math.random() * 6;
+      audioScheduler = setTimeout(scheduleCycle, (cycleDur - 4) * 1000);
+    }
+    scheduleCycle();
+  });
+}
+
+function stopAudioEngine() {
+  if (!audioRunning) return;
+  if (audioScheduler) clearTimeout(audioScheduler);
+  if (masterGain && audioCtx) {
+    masterGain.gain.linearRampToValueAtTime(0.0001, audioCtx.currentTime + 2.5);
+    setTimeout(() => {
+      try { audioCtx.close(); } catch(e) {}
+      audioCtx = null; masterGain = null; reverbNode = null;
+    }, 3000);
+  }
+  audioRunning = false;
+}
+
+// Sound button
+const bmBtn = document.getElementById('bm');
+bmBtn.addEventListener('click', function() {
+  audioMuted = !audioMuted;
+  if (!audioMuted) {
+    this.textContent = 'Mute';
+    this.classList.add('active');
+    startAudioEngine(); // audioMuted is now false — engine will schedule tones
+  } else {
+    this.textContent = 'Sound On';
+    this.classList.remove('active');
+    stopAudioEngine();
+  }
+});
+
+// Pause syncs audio — note: by this point btns.pause listener has already toggled `paused`
+// so we read the NEW value of paused to decide whether to suspend or resume
+btns.pause.addEventListener('click', function() {
+  if (audioCtx && audioRunning) {
+    // paused has already been toggled by the first listener
+    if (paused) {
+      audioCtx.suspend(); // animation just paused → suspend audio
+    } else {
+      audioCtx.resume();  // animation just resumed → resume audio
+    }
+  }
+});
+
+</script>
+</div></body>
+</html>
