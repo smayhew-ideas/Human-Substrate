@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE LOOP | Intelligence Dashboard</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@200;300;400;500;600&family=IBM+Plex+Mono:wght@300;400&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-primary: #08090c;
+            --bg-secondary: #0f1115;
+            --bg-card: #12141a;
+            --bg-hover: #1a1d24;
+            --text-primary: #e8eaed;
+            --text-secondary: #8b8f98;
+            --text-muted: #5a5e68;
+            --accent-amber: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-green: #22c55e;
+            --accent-blue: #3b82f6;
+            --accent-purple: #a855f7;
+            --border: #1f2128;
+        }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        #root { min-height: 100vh; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // ===== DATA: The 28 Capacities =====
+        const CAPACITIES = [
+            { id: 'trust', name: 'Trust', cluster: 'Social', base: 72, connections: ['nuance', 'care', 'judgment'] },
+            { id: 'nuance', name: 'Nuance', cluster: 'Cognition', base: 68, connections: ['context', 'meaning', 'timing'] },
+            { id: 'empathy', name: 'Empathy', cluster: 'Emotion', base: 75, connections: ['care', 'reading', 'presence'] },
+            { id: 'care', name: 'Care', cluster: 'Emotion', base: 70, connections: ['trust', 'empathy', 'patience'] },
+            { id: 'judgment', name: 'Judgment', cluster: 'Judgment', base: 65, connections: ['wisdom', 'discernment', 'timing'] },
+            { id: 'context', name: 'Context', cluster: 'Meaning', base: 60, connections: ['memory', 'nuance', 'meaning'] },
+            { id: 'memory', name: 'Memory', cluster: 'Cognition', base: 55, connections: ['context', 'tradition', 'craft'] },
+            { id: 'timing', name: 'Timing', cluster: 'Judgment', base: 62, connections: ['reading', 'judgment', 'presence'] },
+            { id: 'presence', name: 'Presence', cluster: 'Social', base: 68, connections: ['reading', 'empathy', 'timing'] },
+            { id: 'reading', name: 'Reading Rooms', cluster: 'Social', base: 64, connections: ['presence', 'timing', 'nuance'] },
+            { id: 'wisdom', name: 'Wisdom', cluster: 'Meaning', base: 58, connections: ['judgment', 'patience', 'tradition'] },
+            { id: 'patience', name: 'Patience', cluster: 'Emotion', base: 66, connections: ['care', 'wisdom', 'craft'] },
+            { id: 'craft', name: 'Craft', cluster: 'Culture', base: 52, connections: ['memory', 'patience', 'tradition'] },
+            { id: 'tradition', name: 'Tradition', cluster: 'Culture', base: 48, connections: ['memory', 'craft', 'meaning'] },
+            { id: 'meaning', name: 'Meaning-Making', cluster: 'Meaning', base: 70, connections: ['context', 'nuance', 'tradition'] },
+            { id: 'discernment', name: 'Discernment', cluster: 'Judgment', base: 60, connections: ['judgment', 'wisdom', 'reading'] },
+            { id: 'tact', name: 'Tact', cluster: 'Social', base: 58, connections: ['reading', 'timing', 'nuance'] },
+            { id: 'humor', name: 'Humor', cluster: 'Culture', base: 65, connections: ['timing', 'reading', 'presence'] },
+            { id: 'resilience', name: 'Resilience', cluster: 'Emotion', base: 62, connections: ['patience', 'wisdom', 'hope'] },
+            { id: 'hope', name: 'Hope', cluster: 'Meaning', base: 68, connections: ['resilience', 'meaning', 'trust'] },
+            { id: 'curiosity', name: 'Curiosity', cluster: 'Cognition', base: 72, connections: ['meaning', 'nuance', 'wonder'] },
+            { id: 'wonder', name: 'Wonder', cluster: 'Meaning', base: 70, connections: ['curiosity', 'meaning', 'presence'] },
+            { id: 'intuition', name: 'Intuition', cluster: 'Cognition', base: 55, connections: ['reading', 'judgment', 'timing'] },
+            { id: 'courage', name: 'Courage', cluster: 'Emotion', base: 60, connections: ['judgment', 'hope', 'resilience'] },
+            { id: 'integrity', name: 'Integrity', cluster: 'Judgment', base: 65, connections: ['trust', 'judgment', 'discernment'] },
+            { id: 'grace', name: 'Grace', cluster: 'Social', base: 58, connections: ['presence', 'tact', 'patience'] },
+            { id: 'forgiveness', name: 'Forgiveness', cluster: 'Emotion', base: 50, connections: ['empathy', 'wisdom', 'hope'] },
+            { id: 'gratitude', name: 'Gratitude', cluster: 'Meaning', base: 68, connections: ['wonder', 'presence', 'hope'] }
+        ];
+
+        // ===== DATA: The Carriers =====
+        const CARRIERS = [
+            { id: 'teacher', name: 'The Teacher', capacities: ['patience', 'nuance', 'meaning', 'hope', 'curiosity'], atRisk: true, story: 'Thirty years reading faces before the words come' },
+            { id: 'nurse', name: 'The Nurse', capacities: ['care', 'reading', 'presence', 'timing', 'resilience'], atRisk: true, story: 'Knowing when the chart says one thing and the body says another' },
+            { id: 'bartender', name: 'The Bartender', capacities: ['reading', 'timing', 'humor', 'presence', 'tact'], atRisk: false, story: 'The pause before pouring that says "tell me more"' },
+            { id: 'grandmother', name: 'The Grandmother', capacities: ['wisdom', 'patience', 'tradition', 'memory', 'forgiveness'], atRisk: true, story: 'Recipes that aren\'t written down' },
+            { id: 'therapist', name: 'The Therapist', capacities: ['empathy', 'judgment', 'presence', 'timing', 'trust'], atRisk: true, story: 'Holding space when words run out' },
+            { id: 'craftsman', name: 'The Craftsman', capacities: ['craft', 'patience', 'memory', 'intuition', 'integrity'], atRisk: true, story: 'Hands that remember what machines forget' },
+            { id: 'translator', name: 'The Translator', capacities: ['nuance', 'context', 'meaning', 'tact', 'reading'], atRisk: true, story: 'The word that doesn\'t exist but everyone understands' },
+            { id: 'mediator', name: 'The Mediator', capacities: ['reading', 'timing', 'trust', 'discernment', 'patience'], atRisk: false, story: 'Knowing when silence speaks louder' },
+            { id: 'elder', name: 'The Elder', capacities: ['wisdom', 'tradition', 'memory', 'judgment', 'grace'], atRisk: true, story: 'Stories that teach without teaching' },
+            { id: 'coach', name: 'The Coach', capacities: ['reading', 'timing', 'hope', 'courage', 'presence'], atRisk: false, story: 'Seeing the champion before they do' },
+            { id: 'librarian', name: 'The Librarian', capacities: ['curiosity', 'context', 'memory', 'patience', 'wonder'], atRisk: true, story: 'Matching souls to stories' },
+            { id: 'chef', name: 'The Chef', capacities: ['timing', 'intuition', 'craft', 'memory', 'presence'], atRisk: false, story: 'When the dish is ready, not when the timer says' }
+        ];
+
+        const CLUSTERS = {
+            'Meaning': { color: '#f59e0b', description: 'How we make sense of experience' },
+            'Emotion': { color: '#ef4444', description: 'How we feel and help others feel' },
+            'Social': { color: '#3b82f6', description: 'How we connect and read each other' },
+            'Culture': { color: '#a855f7', description: 'What we inherit and pass on' },
+            'Judgment': { color: '#22c55e', description: 'How we decide what matters' },
+            'Cognition': { color: '#06b6d4', description: 'How we think and understand' }
+        };
+
+        // ===== COMPONENTS =====
+
+        const CapacityOrb = ({ capacity, value, isSelected, onClick, isAffected, cascadeDirection }) => {
+            const cluster = CLUSTERS[capacity.cluster];
+            const size = 60 + (value / 100) * 30;
+            const opacity = 0.4 + (value / 100) * 0.6;
+
+            return (
+                <div
+                    onClick={() => onClick(capacity)}
+                    style={{
+                        position: 'relative',
+                        width: size,
+                        height: size,
+                        cursor: 'pointer',
+                        transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+                    }}
+                >
+                    <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        borderRadius: '50%',
+                        background: `radial-gradient(circle at 30% 30%, ${cluster.color}${Math.round(opacity * 255).toString(16).padStart(2, '0')}, transparent 70%)`,
+                        border: isSelected ? `2px solid ${cluster.color}` : '1px solid rgba(255,255,255,0.1)',
+                        boxShadow: isSelected ? `0 0 30px ${cluster.color}40` : isAffected ? `0 0 20px ${cascadeDirection === 'down' ? '#ef444460' : '#22c55e60'}` : 'none',
+                        transform: isSelected ? 'scale(1.1)' : 'scale(1)',
+                        transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+                    }} />
+                    <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}>
+                        <span style={{
+                            fontSize: 10,
+                            fontWeight: 500,
+                            color: 'var(--text-primary)',
+                            textAlign: 'center',
+                            lineHeight: 1.2,
+                            padding: '0 4px'
+                        }}>{capacity.name}</span>
+                        <span style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            color: cluster.color,
+                            marginTop: 2
+                        }}>{Math.round(value)}%</span>
+                    </div>
+                </div>
+            );
+        };
+
+        const CarrierCard = ({ carrier, capacityValues, isSelected, onClick }) => {
+            const avgHealth = carrier.capacities.reduce((sum, c) => sum + (capacityValues[c] || 50), 0) / carrier.capacities.length;
+            const healthColor = avgHealth > 65 ? 'var(--accent-green)' : avgHealth > 40 ? 'var(--accent-amber)' : 'var(--accent-red)';
+
+            return (
+                <div
+                    onClick={() => onClick(carrier)}
+                    style={{
+                        padding: '16px',
+                        background: isSelected ? 'var(--bg-hover)' : 'var(--bg-card)',
+                        border: isSelected ? '1px solid var(--accent-amber)' : '1px solid var(--border)',
+                        borderRadius: 8,
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease'
+                    }}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                        <div style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: '50%',
+                            background: `linear-gradient(135deg, ${healthColor}40, transparent)`,
+                            border: `1px solid ${healthColor}60`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: 11,
+                            fontWeight: 600,
+                            color: healthColor
+                        }}>
+                            {Math.round(avgHealth)}%
+                        </div>
+                        <div>
+                            <div style={{ fontSize: 14, fontWeight: 500 }}>{carrier.name}</div>
+                            {carrier.atRisk && (
+                                <span style={{
+                                    fontSize: 10,
+                                    color: 'var(--accent-red)',
+                                    background: 'rgba(239, 68, 68, 0.1)',
+                                    padding: '2px 6px',
+                                    borderRadius: 4
+                                }}>AT RISK</span>
+                            )}
+                        </div>
+                    </div>
+                    <p style={{
+                        fontSize: 12,
+                        fontStyle: 'italic',
+                        color: 'var(--text-secondary)',
+                        lineHeight: 1.4
+                    }}>"{carrier.story}"</p>
+                </div>
+            );
+        };
+
+        const LoopVisualization = ({ loopState, capacityValues }) => {
+            const canvasRef = useRef(null);
+            const avgValue = Object.values(capacityValues).reduce((a, b) => a + b, 0) / Object.values(capacityValues).length;
+
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                const w = canvas.width = 400;
+                const h = canvas.height = 400;
+                const cx = w / 2;
+                const cy = h / 2;
+
+                let animationFrame;
+                let time = 0;
+
+                const draw = () => {
+                    time += 0.02;
+                    ctx.fillStyle = 'rgba(8, 9, 12, 0.1)';
+                    ctx.fillRect(0, 0, w, h);
+
+                    // Draw flow particles
+                    const particleCount = Math.floor(loopState * 50);
+                    for (let i = 0; i < particleCount; i++) {
+                        const angle = (time + i * (Math.PI * 2 / particleCount)) % (Math.PI * 2);
+                        const radius = 100 + Math.sin(time * 2 + i) * 20;
+                        const x = cx + Math.cos(angle) * radius;
+                        const y = cy + Math.sin(angle) * radius;
+
+                        const hue = loopState > 0.5 ? 142 : loopState > 0.3 ? 45 : 0;
+                        ctx.beginPath();
+                        ctx.arc(x, y, 2 + loopState * 3, 0, Math.PI * 2);
+                        ctx.fillStyle = `hsla(${hue}, 70%, 50%, ${0.3 + loopState * 0.5})`;
+                        ctx.fill();
+                    }
+
+                    // Draw center orb
+                    const orbSize = 40 + avgValue * 0.4;
+                    const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, orbSize);
+                    gradient.addColorStop(0, `rgba(255, 254, 248, ${0.3 + loopState * 0.5})`);
+                    gradient.addColorStop(0.5, `rgba(255, 254, 248, ${0.1 + loopState * 0.2})`);
+                    gradient.addColorStop(1, 'transparent');
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, orbSize, 0, Math.PI * 2);
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+
+                    // Draw broken/whole indicator
+                    ctx.strokeStyle = loopState > 0.5 ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.3)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 140, 0, Math.PI * 2 * loopState);
+                    ctx.stroke();
+
+                    animationFrame = requestAnimationFrame(draw);
+                };
+
+                draw();
+                return () => cancelAnimationFrame(animationFrame);
+            }, [loopState, avgValue]);
+
+            return (
+                <div style={{ position: 'relative' }}>
+                    <canvas ref={canvasRef} style={{ borderRadius: 12 }} />
+                    <div style={{
+                        position: 'absolute',
+                        bottom: 20,
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        textAlign: 'center'
+                    }}>
+                        <div style={{
+                            fontSize: 32,
+                            fontWeight: 200,
+                            color: loopState > 0.5 ? 'var(--accent-green)' : loopState > 0.3 ? 'var(--accent-amber)' : 'var(--accent-red)',
+                            letterSpacing: '-0.02em'
+                        }}>
+                            {loopState > 0.7 ? 'LOOP CLOSING' : loopState > 0.4 ? 'EQUILIBRIUM' : 'LOOP BREAKING'}
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                            {Math.round(loopState * 100)}% value returning to source
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const CascadeLog = ({ events }) => (
+            <div style={{
+                maxHeight: 200,
+                overflow: 'auto',
+                padding: 16,
+                background: 'var(--bg-card)',
+                borderRadius: 8,
+                border: '1px solid var(--border)'
+            }}>
+                <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', marginBottom: 12, letterSpacing: '0.05em' }}>
+                    CASCADE LOG
+                </div>
+                {events.length === 0 ? (
+                    <p style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                        Adjust capacities to see cascade effects...
+                    </p>
+                ) : (
+                    events.slice(-10).reverse().map((event, i) => (
+                        <div key={i} style={{
+                            fontSize: 12,
+                            padding: '6px 0',
+                            borderBottom: i < events.length - 1 ? '1px solid var(--border)' : 'none',
+                            color: event.direction === 'down' ? 'var(--accent-red)' : 'var(--accent-green)'
+                        }}>
+                            <span style={{ color: 'var(--text-secondary)' }}>{event.source}</span>
+                            <span style={{ margin: '0 8px' }}>{event.direction === 'down' ? '↓' : '↑'}</span>
+                            <span>{event.target}</span>
+                            <span style={{ marginLeft: 8, fontSize: 11 }}>({event.change > 0 ? '+' : ''}{event.change.toFixed(1)}%)</span>
+                        </div>
+                    ))
+                )}
+            </div>
+        );
+
+        const StatCard = ({ label, value, subtext, color }) => (
+            <div style={{
+                padding: 20,
+                background: 'var(--bg-card)',
+                borderRadius: 8,
+                border: '1px solid var(--border)'
+            }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.05em', marginBottom: 8 }}>
+                    {label}
+                </div>
+                <div style={{ fontSize: 32, fontWeight: 300, color: color || 'var(--text-primary)' }}>
+                    {value}
+                </div>
+                {subtext && (
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
+                        {subtext}
+                    </div>
+                )}
+            </div>
+        );
+
+        // ===== MAIN APP =====
+        const App = () => {
+            const [loopState, setLoopState] = useState(0.5);
+            const [capacityValues, setCapacityValues] = useState(() => {
+                const initial = {};
+                CAPACITIES.forEach(c => { initial[c.id] = c.base; });
+                return initial;
+            });
+            const [selectedCapacity, setSelectedCapacity] = useState(null);
+            const [selectedCarrier, setSelectedCarrier] = useState(null);
+            const [cascadeEvents, setCascadeEvents] = useState([]);
+            const [affectedCapacities, setAffectedCapacities] = useState({});
+            const [view, setView] = useState('overview'); // 'overview', 'capacities', 'carriers'
+
+            const handleCapacityClick = (capacity) => {
+                setSelectedCapacity(selectedCapacity?.id === capacity.id ? null : capacity);
+                setSelectedCarrier(null);
+            };
+
+            const handleCarrierClick = (carrier) => {
+                setSelectedCarrier(selectedCarrier?.id === carrier.id ? null : carrier);
+                setSelectedCapacity(null);
+            };
+
+            const adjustCapacity = (capId, delta) => {
+                const newValues = { ...capacityValues };
+                const oldValue = newValues[capId];
+                newValues[capId] = Math.max(5, Math.min(100, oldValue + delta));
+
+                // Cascade effects
+                const cap = CAPACITIES.find(c => c.id === capId);
+                const newEvents = [];
+                const affected = {};
+
+                cap.connections.forEach(connId => {
+                    const cascadeAmount = delta * 0.3;
+                    newValues[connId] = Math.max(5, Math.min(100, newValues[connId] + cascadeAmount));
+                    affected[connId] = delta > 0 ? 'up' : 'down';
+                    newEvents.push({
+                        source: cap.name,
+                        target: CAPACITIES.find(c => c.id === connId).name,
+                        change: cascadeAmount,
+                        direction: delta > 0 ? 'up' : 'down'
+                    });
+                });
+
+                setCapacityValues(newValues);
+                setCascadeEvents(prev => [...prev, ...newEvents]);
+                setAffectedCapacities(affected);
+
+                setTimeout(() => setAffectedCapacities({}), 1500);
+
+                // Update loop state based on average
+                const avg = Object.values(newValues).reduce((a, b) => a + b, 0) / Object.values(newValues).length;
+                setLoopState(avg / 100);
+            };
+
+            const runScenario = (scenario) => {
+                let updates = {};
+                switch(scenario) {
+                    case 'ai-extraction':
+                        updates = { trust: -20, nuance: -25, empathy: -15, context: -30, memory: -20 };
+                        break;
+                    case 'elder-loss':
+                        updates = { wisdom: -35, tradition: -30, memory: -25, craft: -20, patience: -15 };
+                        break;
+                    case 'loop-closing':
+                        updates = { trust: 15, care: 20, empathy: 15, hope: 25, meaning: 20 };
+                        break;
+                    case 'reset':
+                        const reset = {};
+                        CAPACITIES.forEach(c => { reset[c.id] = c.base; });
+                        setCapacityValues(reset);
+                        setLoopState(0.5);
+                        setCascadeEvents([]);
+                        return;
+                }
+
+                const newValues = { ...capacityValues };
+                Object.entries(updates).forEach(([cap, delta]) => {
+                    newValues[cap] = Math.max(5, Math.min(100, newValues[cap] + delta));
+                });
+                setCapacityValues(newValues);
+
+                const avg = Object.values(newValues).reduce((a, b) => a + b, 0) / Object.values(newValues).length;
+                setLoopState(avg / 100);
+            };
+
+            const avgHealth = Object.values(capacityValues).reduce((a, b) => a + b, 0) / Object.values(capacityValues).length;
+            const atRiskCarriers = CARRIERS.filter(c => {
+                const health = c.capacities.reduce((sum, cap) => sum + capacityValues[cap], 0) / c.capacities.length;
+                return health < 50;
+            });
+
+            return (
+                <div style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
+                    {/* Header */}
+                    <header style={{
+                        padding: '24px 40px',
+                        borderBottom: '1px solid var(--border)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                    }}>
+                        <div>
+                            <h1 style={{ fontSize: 24, fontWeight: 300, letterSpacing: '0.1em' }}>THE LOOP</h1>
+                            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                                Mapping the human capacities AI depends on
+                            </p>
+                        </div>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            {['overview', 'capacities', 'carriers'].map(v => (
+                                <button
+                                    key={v}
+                                    onClick={() => setView(v)}
+                                    style={{
+                                        padding: '8px 16px',
+                                        fontSize: 12,
+                                        fontWeight: 400,
+                                        letterSpacing: '0.05em',
+                                        textTransform: 'uppercase',
+                                        background: view === v ? 'var(--bg-hover)' : 'transparent',
+                                        border: view === v ? '1px solid var(--accent-amber)' : '1px solid var(--border)',
+                                        color: view === v ? 'var(--accent-amber)' : 'var(--text-secondary)',
+                                        borderRadius: 4,
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                >
+                                    {v}
+                                </button>
+                            ))}
+                        </div>
+                        <span style={{ fontSize: 11, fontWeight: 200, letterSpacing: '0.3em', color: 'var(--text-muted)' }}>
+                            MAYHEW
+                        </span>
+                    </header>
+
+                    <main style={{ padding: '32px 40px', display: 'grid', gridTemplateColumns: '1fr 420px', gap: 32 }}>
+                        {/* Main Content */}
+                        <div>
+                            {view === 'overview' && (
+                                <>
+                                    {/* Stats Row */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
+                                        <StatCard
+                                            label="SUBSTRATE HEALTH"
+                                            value={`${Math.round(avgHealth)}%`}
+                                            color={avgHealth > 65 ? 'var(--accent-green)' : avgHealth > 40 ? 'var(--accent-amber)' : 'var(--accent-red)'}
+                                        />
+                                        <StatCard
+                                            label="CAPACITIES MAPPED"
+                                            value={CAPACITIES.length}
+                                            subtext="across 6 clusters"
+                                        />
+                                        <StatCard
+                                            label="CARRIERS AT RISK"
+                                            value={atRiskCarriers.length}
+                                            color="var(--accent-red)"
+                                            subtext={`of ${CARRIERS.length} tracked`}
+                                        />
+                                        <StatCard
+                                            label="LOOP STATUS"
+                                            value={loopState > 0.6 ? 'Closing' : loopState > 0.35 ? 'Partial' : 'Broken'}
+                                            color={loopState > 0.6 ? 'var(--accent-green)' : loopState > 0.35 ? 'var(--accent-amber)' : 'var(--accent-red)'}
+                                        />
+                                    </div>
+
+                                    {/* Capacities Grid */}
+                                    <div style={{
+                                        background: 'var(--bg-card)',
+                                        borderRadius: 12,
+                                        border: '1px solid var(--border)',
+                                        padding: 24,
+                                        marginBottom: 24
+                                    }}>
+                                        <h3 style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 20 }}>
+                                            THE 28 CAPACITIES
+                                        </h3>
+                                        <div style={{
+                                            display: 'flex',
+                                            flexWrap: 'wrap',
+                                            gap: 12,
+                                            justifyContent: 'center'
+                                        }}>
+                                            {CAPACITIES.map(cap => (
+                                                <CapacityOrb
+                                                    key={cap.id}
+                                                    capacity={cap}
+                                                    value={capacityValues[cap.id]}
+                                                    isSelected={selectedCapacity?.id === cap.id}
+                                                    onClick={handleCapacityClick}
+                                                    isAffected={!!affectedCapacities[cap.id]}
+                                                    cascadeDirection={affectedCapacities[cap.id]}
+                                                />
+                                            ))}
+                                        </div>
+
+                                        {/* Cluster Legend */}
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginTop: 24, justifyContent: 'center' }}>
+                                            {Object.entries(CLUSTERS).map(([name, data]) => (
+                                                <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: data.color }} />
+                                                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{name}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {view === 'capacities' && selectedCapacity && (
+                                <div style={{
+                                    background: 'var(--bg-card)',
+                                    borderRadius: 12,
+                                    border: '1px solid var(--border)',
+                                    padding: 32
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 24, marginBottom: 32 }}>
+                                        <CapacityOrb
+                                            capacity={selectedCapacity}
+                                            value={capacityValues[selectedCapacity.id]}
+                                            isSelected={true}
+                                            onClick={() => {}}
+                                        />
+                                        <div>
+                                            <h2 style={{ fontSize: 28, fontWeight: 300, marginBottom: 8 }}>
+                                                {selectedCapacity.name}
+                                            </h2>
+                                            <div style={{
+                                                fontSize: 11,
+                                                color: CLUSTERS[selectedCapacity.cluster].color,
+                                                background: `${CLUSTERS[selectedCapacity.cluster].color}20`,
+                                                padding: '4px 10px',
+                                                borderRadius: 4,
+                                                display: 'inline-block'
+                                            }}>
+                                                {selectedCapacity.cluster} • {CLUSTERS[selectedCapacity.cluster].description}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ marginBottom: 32 }}>
+                                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>ADJUST CAPACITY</div>
+                                        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                                            <button
+                                                onClick={() => adjustCapacity(selectedCapacity.id, -10)}
+                                                style={{
+                                                    padding: '10px 24px',
+                                                    background: 'rgba(239, 68, 68, 0.1)',
+                                                    border: '1px solid var(--accent-red)',
+                                                    color: 'var(--accent-red)',
+                                                    borderRadius: 6,
+                                                    cursor: 'pointer',
+                                                    fontSize: 14
+                                                }}
+                                            >
+                                                − Extract
+                                            </button>
+                                            <div style={{
+                                                flex: 1,
+                                                height: 8,
+                                                background: 'var(--bg-secondary)',
+                                                borderRadius: 4,
+                                                overflow: 'hidden'
+                                            }}>
+                                                <div style={{
+                                                    width: `${capacityValues[selectedCapacity.id]}%`,
+                                                    height: '100%',
+                                                    background: CLUSTERS[selectedCapacity.cluster].color,
+                                                    transition: 'width 0.5s ease'
+                                                }} />
+                                            </div>
+                                            <button
+                                                onClick={() => adjustCapacity(selectedCapacity.id, 10)}
+                                                style={{
+                                                    padding: '10px 24px',
+                                                    background: 'rgba(34, 197, 94, 0.1)',
+                                                    border: '1px solid var(--accent-green)',
+                                                    color: 'var(--accent-green)',
+                                                    borderRadius: 6,
+                                                    cursor: 'pointer',
+                                                    fontSize: 14
+                                                }}
+                                            >
+                                                + Return
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>CONNECTED CAPACITIES</div>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                                            {selectedCapacity.connections.map(connId => {
+                                                const conn = CAPACITIES.find(c => c.id === connId);
+                                                return (
+                                                    <div
+                                                        key={connId}
+                                                        onClick={() => setSelectedCapacity(conn)}
+                                                        style={{
+                                                            padding: '8px 16px',
+                                                            background: 'var(--bg-hover)',
+                                                            border: '1px solid var(--border)',
+                                                            borderRadius: 20,
+                                                            cursor: 'pointer',
+                                                            fontSize: 12
+                                                        }}
+                                                    >
+                                                        {conn.name} <span style={{ color: CLUSTERS[conn.cluster].color }}>{Math.round(capacityValues[connId])}%</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {view === 'capacities' && !selectedCapacity && (
+                                <div style={{
+                                    background: 'var(--bg-card)',
+                                    borderRadius: 12,
+                                    border: '1px solid var(--border)',
+                                    padding: 32
+                                }}>
+                                    <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 24 }}>
+                                        Select a capacity to explore its connections and adjust its value.
+                                    </p>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                                        {CAPACITIES.map(cap => (
+                                            <CapacityOrb
+                                                key={cap.id}
+                                                capacity={cap}
+                                                value={capacityValues[cap.id]}
+                                                isSelected={false}
+                                                onClick={handleCapacityClick}
+                                                isAffected={!!affectedCapacities[cap.id]}
+                                                cascadeDirection={affectedCapacities[cap.id]}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {view === 'carriers' && (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+                                    {CARRIERS.map(carrier => (
+                                        <CarrierCard
+                                            key={carrier.id}
+                                            carrier={carrier}
+                                            capacityValues={capacityValues}
+                                            isSelected={selectedCarrier?.id === carrier.id}
+                                            onClick={handleCarrierClick}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Sidebar */}
+                        <aside>
+                            <LoopVisualization loopState={loopState} capacityValues={capacityValues} />
+
+                            {/* Scenarios */}
+                            <div style={{
+                                marginTop: 24,
+                                padding: 20,
+                                background: 'var(--bg-card)',
+                                borderRadius: 8,
+                                border: '1px solid var(--border)'
+                            }}>
+                                <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', letterSpacing: '0.05em', marginBottom: 16 }}>
+                                    RUN SCENARIO
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    {[
+                                        { id: 'ai-extraction', label: 'AI Extraction Wave', color: 'var(--accent-red)' },
+                                        { id: 'elder-loss', label: 'Elder Carrier Loss', color: 'var(--accent-amber)' },
+                                        { id: 'loop-closing', label: 'Loop Closing Initiative', color: 'var(--accent-green)' },
+                                        { id: 'reset', label: 'Reset to Baseline', color: 'var(--text-secondary)' }
+                                    ].map(scenario => (
+                                        <button
+                                            key={scenario.id}
+                                            onClick={() => runScenario(scenario.id)}
+                                            style={{
+                                                padding: '12px 16px',
+                                                background: 'transparent',
+                                                border: `1px solid ${scenario.color}40`,
+                                                color: scenario.color,
+                                                borderRadius: 6,
+                                                cursor: 'pointer',
+                                                fontSize: 13,
+                                                textAlign: 'left',
+                                                transition: 'all 0.2s ease'
+                                            }}
+                                        >
+                                            {scenario.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Cascade Log */}
+                            <div style={{ marginTop: 24 }}>
+                                <CascadeLog events={cascadeEvents} />
+                            </div>
+
+                            {/* Selected Carrier Details */}
+                            {selectedCarrier && (
+                                <div style={{
+                                    marginTop: 24,
+                                    padding: 20,
+                                    background: 'var(--bg-card)',
+                                    borderRadius: 8,
+                                    border: '1px solid var(--accent-amber)'
+                                }}>
+                                    <h3 style={{ fontSize: 16, fontWeight: 500, marginBottom: 12 }}>
+                                        {selectedCarrier.name}
+                                    </h3>
+                                    <p style={{ fontSize: 13, color: 'var(--text-secondary)', fontStyle: 'italic', marginBottom: 16 }}>
+                                        "{selectedCarrier.story}"
+                                    </p>
+                                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>CARRIES:</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                        {selectedCarrier.capacities.map(capId => {
+                                            const cap = CAPACITIES.find(c => c.id === capId);
+                                            return (
+                                                <span key={capId} style={{
+                                                    padding: '4px 10px',
+                                                    background: `${CLUSTERS[cap.cluster].color}20`,
+                                                    color: CLUSTERS[cap.cluster].color,
+                                                    borderRadius: 4,
+                                                    fontSize: 11
+                                                }}>
+                                                    {cap.name}
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </aside>
+                    </main>
+
+                    {/* Footer Quote */}
+                    <footer style={{
+                        padding: '40px',
+                        borderTop: '1px solid var(--border)',
+                        textAlign: 'center'
+                    }}>
+                        <p style={{
+                            fontSize: 18,
+                            fontWeight: 200,
+                            fontStyle: 'italic',
+                            color: 'var(--text-secondary)',
+                            maxWidth: 600,
+                            margin: '0 auto',
+                            lineHeight: 1.6
+                        }}>
+                            "AI went to school on us. Where's the tuition?"
+                        </p>
+                        <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 16 }}>
+                            THE LOOP PROJECT • A framework for naming what AI extracts and closing the loop
+                        </p>
+                    </footer>
+                </div>
+            );
+        };
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
